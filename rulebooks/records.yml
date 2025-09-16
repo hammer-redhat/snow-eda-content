@@ -1,0 +1,15 @@
+---
+- name: Generic new poll for new records in ServiceNow
+  hosts: all
+  sources:
+    - name: Watch for any updated table
+      servicenow.itsm.records:
+        table: sc_request
+        interval: 5
+
+  rules:
+
+    - name: New record created and debug
+      condition: event.sys_id is defined
+      action:
+        debug:
