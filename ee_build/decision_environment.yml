@@ -1,0 +1,20 @@
+---
+version: 3
+
+dependencies:
+  galaxy:
+    collections:
+      - name: servicenow.itsm
+      - name: ansible.eda
+  system:
+    - pkgconf-pkg-config [platform:rpm]
+    - systemd-devel [platform:rpm]
+    - gcc [platform:rpm]
+    - python3.11-devel [platform:rpm]
+
+options:
+  package_manager_path: /usr/bin/microdnf
+
+images:
+  base_image:
+    name: registry.redhat.io/ansible-automation-platform-25/de-minimal-rhel8:latest
