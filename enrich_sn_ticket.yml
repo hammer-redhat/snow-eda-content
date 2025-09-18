@@ -1,0 +1,8 @@
+---
+- name: Enhance the SN Ticket
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  roles:
+    - servicenow_ritm_retrieve_eda
