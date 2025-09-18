@@ -9,7 +9,7 @@
       password: "{{ lookup('env', 'SN_PASSWORD') }}"
       username: "{{ lookup('env', 'SN_USERNAME') }}"
     state: in_progress
-    number: "{{ ticket_number }}"
+    number: "{{ req_number }}"
     urgency: "{{ sn_urgency }}"
     impact: "{{ sn_impact }}"
     other:
