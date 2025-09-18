@@ -10,8 +10,8 @@
       username: "{{ lookup('env', 'SN_USERNAME') }}"
     state: in_progress
     number: "{{ req_number }}"
-    urgency: "{{ sn_urgency }}"
-    impact: "{{ sn_impact }}"
+    urgency: "{{ event.urgency }}"
+    impact: "{{ event.impact }}"
     other:
       comments: "{{ comment }}"
     attachments:
