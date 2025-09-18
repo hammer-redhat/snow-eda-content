@@ -13,7 +13,7 @@
     urgency: "{{ ansible_eda.event.urgency }}"
     impact: "{{ ansible_eda.event.impact }}"
     other:
-      comments: "{{ comment }}"
+      comments: "This is automated enrichment of ServiceNow tickets with EDA."
     attachments:
       - path: /tmp/cpu.txt
         name: "CPU Utilization Results After"
