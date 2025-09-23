@@ -32,7 +32,7 @@
   rules:
     # Create change request for software incidents with patch keyword
     - name: Create change request for software incidents with patch keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and (event.category == "Software" or event.category == "software") and event.short_description == "test patch deployment"
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "1" and (event.category == "Software" or event.category == "software") and event.short_description == "test patch deployment"
       action:
         run_job_template:
           name: "SNOW: Create Software Change Request"
@@ -48,7 +48,7 @@
 
     # Create change request for software incidents with update keyword
     - name: Create change request for software incidents with update keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and (event.category == "Software" or event.category == "software") and ("update" in event.short_description or "Update" in event.short_description or "UPDATE" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "1" and (event.category == "Software" or event.category == "software") and ("update" in event.short_description or "Update" in event.short_description or "UPDATE" in event.short_description)
       action:
         run_job_template:
           name: "SNOW: Create Software Change Request"
@@ -64,7 +64,7 @@
 
     # Create change request for software incidents with upgrade keyword
     - name: Create change request for software incidents with upgrade keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and (event.category == "Software" or event.category == "software") and ("upgrade" in event.short_description or "Upgrade" in event.short_description or "UPGRADE" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "1" and (event.category == "Software" or event.category == "software") and ("upgrade" in event.short_description or "Upgrade" in event.short_description or "UPGRADE" in event.short_description)
       action:
         run_job_template:
           name: "SNOW: Create Software Change Request"
@@ -80,7 +80,7 @@
 
     # Create change request for software incidents with deployment keyword
     - name: Create change request for software incidents with deployment keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and (event.category == "Software" or event.category == "software") and ("deployment" in event.short_description or "Deployment" in event.short_description or "DEPLOYMENT" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "1" and (event.category == "Software" or event.category == "software") and ("deployment" in event.short_description or "Deployment" in event.short_description or "DEPLOYMENT" in event.short_description)
       action:
         run_job_template:
           name: "SNOW: Create Software Change Request"
@@ -96,7 +96,7 @@
 
     # Create change request for software incidents with configuration keyword
     - name: Create change request for software incidents with configuration keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and (event.category == "Software" or event.category == "software") and ("configuration" in event.short_description or "Configuration" in event.short_description or "CONFIGURATION" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "1" and (event.category == "Software" or event.category == "software") and ("configuration" in event.short_description or "Configuration" in event.short_description or "CONFIGURATION" in event.short_description)
       action:
         run_job_template:
           name: "SNOW: Create Software Change Request"
@@ -112,7 +112,7 @@
 
     # Create change request for software incidents with database keyword
     - name: Create change request for software incidents with database keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and (event.category == "Software" or event.category == "software") and ("database" in event.short_description or "Database" in event.short_description or "DATABASE" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "1" and (event.category == "Software" or event.category == "software") and ("database" in event.short_description or "Database" in event.short_description or "DATABASE" in event.short_description)
       action:
         run_job_template:
           name: "SNOW: Create Software Change Request"
@@ -125,10 +125,3 @@
               incident_category: "{{ event.category }}"
               change_type: "standard"
               change_reason: "Software incident requiring database changes"
-    
-    # Debug rule to see what fields are actually received (only if no other rule matches)
-    - name: Debug - Log all received fields
-      condition: event.number is defined
-      action:
-        debug:
-          msg: "DEBUG: Event {{ event.number }} - sys_class_name: {{ event.sys_class_name | default('MISSING') }}, sys_mod_count: {{ event.sys_mod_count | default('MISSING') }}, short_description: {{ event.short_description | default('MISSING') }}, category: {{ event.category }}"
