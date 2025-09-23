@@ -1,21 +1,56 @@
 ---
-- name: Generic new poll for new records in ServiceNow and process the incidents. 
+- name: ServiceNow Incident Monitor with Change Request Decision Engine
   hosts: all
   sources:
-    - name: Watch for any updated incidents
+    - name: Monitor ServiceNow incidents for changes
       servicenow.itsm.records:
-        table: change_request
-        interval: 5
+        table: incident
+        interval: 10
+        fields:
+          - sys_id
+          - number
+          - short_description
+          - description
+          - priority
+          - urgency
+          - impact
+          - state
+          - category
+          - subcategory
+          - assignment_group
+          - assigned_to
+          - sys_created_on
+          - sys_updated_on
+          - sys_mod_count
+          - work_notes
+          - comments
+          - resolution_notes
+          - close_code
+          - close_notes
 
   rules:
-    - name: Create a change request when needed.
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0"
+    # Create change request for software incidents with specific keywords
+    - name: Create change request for software incidents with specific keywords
+      condition: event.sys_class_name == "incident" and 
+                 event.sys_mod_count == "0" and 
+                 event.category == "Software" and
+                 ("patch" in event.short_description.lower() or
+                  "update" in event.short_description.lower() or
+                  "upgrade" in event.short_description.lower() or
+                  "deployment" in event.short_description.lower() or
+                  "configuration" in event.short_description.lower() or
+                  "database" in event.short_description.lower())
       action:
+        debug:
+          msg: "Software incident {{ event.number }} with change-related keywords requires change request"
         run_job_template:
-          name: "EDA Enrich ServiceNow REQ"
+          name: "Create Software Change Request"
           organization: SNOW
           post_events: true
           job_args:
             extra_vars:
-              req_sys_id: "{{ event.sys_id }}"
-              req_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              incident_number: "{{ event.number }}"
+              incident_category: "{{ event.category }}"
+              change_type: "standard"
+              change_reason: "Software incident requiring configuration or deployment changes"

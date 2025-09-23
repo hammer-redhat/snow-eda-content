@@ -19,3 +19,15 @@
             extra_vars:
               req_sys_id: "{{ event.sys_id }}"
               req_number: "{{ event.number }}"
+
+    - name: Create a change request if needed.
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0"
+      action:
+        run_job_template:
+          name: "Create Change Request"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              req_sys_id: "{{ event.sys_id }}"
+              req_number: "{{ event.number }}"
