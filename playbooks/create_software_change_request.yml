@@ -72,9 +72,6 @@
 
     - name: Link change request to original incident
       servicenow.itsm.incident:
-        instance: "{{ servicenow_instance }}"
-        username: "{{ servicenow_username }}"
-        password: "{{ servicenow_password }}"
         sys_id: "{{ incident_sys_id }}"
         work_notes: |
           Change Request Created: {{ change_request_result.record.number }}
@@ -83,28 +80,6 @@
           This incident has been linked to a change request for resolution.
           Please refer to the change request for implementation details and progress updates.
       when: change_request_result is defined and change_request_result.record is defined
-
-    - name: Post change request creation event to EDA
-      ansible.builtin.uri:
-        url: "{{ eda_webhook_url | default('http://localhost:5000/api/events') }}"
-        method: POST
-        headers:
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          event_type: "change_request_created"
-          source: "servicenow_incident_monitor"
-          data:
-            incident_number: "{{ incident_number }}"
-            incident_sys_id: "{{ incident_sys_id }}"
-            change_request_number: "{{ change_request_result.record.number }}"
-            change_request_sys_id: "{{ change_request_result.record.sys_id }}"
-            change_type: "{{ change_type }}"
-            change_reason: "{{ change_reason }}"
-            created_at: "{{ ansible_date_time.iso8601 }}"
-        status_code: [200, 201, 202]
-      when: eda_webhook_url is defined
-      ignore_errors: true
 
     - name: Set fact for change request details
       set_fact:
