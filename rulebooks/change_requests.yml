@@ -29,7 +29,21 @@
           - close_code
           - close_notes
 
-  rules:    
+  rules:
+    # Debug rule to see what fields are actually received
+    - name: Debug - Log all received fields
+      condition: event.number is defined
+      action:
+        debug:
+          msg: "DEBUG: Event {{ event.number }} - sys_class_name: {{ event.sys_class_name | default('MISSING') }}, sys_mod_count: {{ event.sys_mod_count | default('MISSING') }}, short_description: {{ event.short_description | default('MISSING') }}, category: {{ event.category }}"
+    
+    # Simple test rule for software category (no other requirements)
+    - name: Test - Software category incident
+      condition: event.category == "software"
+      action:
+        debug:
+          msg: "TEST: Software category incident {{ event.number }} detected - rulebook is working!"
+    
     # Create change request for software incidents with patch keyword
     - name: Create change request for software incidents with patch keyword
       condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and (event.category == "Software" or event.category == "software") and ("patch" in event.short_description or "Patch" in event.short_description or "PATCH" in event.short_description)
