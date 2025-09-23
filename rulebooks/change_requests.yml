@@ -30,6 +30,20 @@
           - close_notes
 
   rules:
+    # Debug rule to see all event fields
+    - name: Debug - Log all event fields
+      condition: event.number is defined
+      action:
+        debug:
+          msg: "Event received - Number: {{ event.number }}, Category: {{ event.category }}, sys_class_name: {{ event.sys_class_name | default('MISSING') }}, sys_mod_count: {{ event.sys_mod_count | default('MISSING') }}, short_description: {{ event.short_description | default('MISSING') }}"
+    
+    # Test rule for software category incidents (without missing fields)
+    - name: Test - Software category incident detected
+      condition: event.category == "software"
+      action:
+        debug:
+          msg: "Software category incident detected: {{ event.number }} - This rule works!"
+    
     # Create change request for software incidents with patch keyword
     - name: Create change request for software incidents with patch keyword
       condition: event.sys_class_name == "incident" and event.sys_mod_count >= "1" and (event.category == "Software" or event.category == "software") and ("patch" in event.short_description or "Patch" in event.short_description or "PATCH" in event.short_description)
