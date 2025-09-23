@@ -2,11 +2,6 @@
 - name: Create Software Change Request from ServiceNow Incident
   hosts: localhost
   gather_facts: false
-  vars:
-    servicenow_instance: "{{ servicenow_instance | default('your-instance.service-now.com') }}"
-    servicenow_username: "{{ servicenow_username | default('admin') }}"
-    servicenow_password: "{{ servicenow_password | default('password') }}"
-    
   tasks:
     - name: Debug received event data
       debug:
@@ -20,9 +15,6 @@
 
     - name: Get incident details from ServiceNow
       servicenow.itsm.incident_info:
-        instance: "{{ servicenow_instance }}"
-        username: "{{ servicenow_username }}"
-        password: "{{ servicenow_password }}"
         sys_id: "{{ incident_sys_id }}"
       register: incident_details
 
@@ -40,9 +32,6 @@
 
     - name: Create change request in ServiceNow
       servicenow.itsm.change_request:
-        instance: "{{ servicenow_instance }}"
-        username: "{{ servicenow_username }}"
-        password: "{{ servicenow_password }}"
         state: new
         short_description: "{{ change_reason }} - Related to Incident {{ incident_number }}"
         description: |
