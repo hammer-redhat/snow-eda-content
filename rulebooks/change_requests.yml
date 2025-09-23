@@ -31,16 +31,7 @@
   rules:
     # Create change request for software incidents with specific keywords
     - name: Create change request for software incidents with specific keywords
-      condition: >
-        event.sys_class_name == "incident" and 
-        event.sys_mod_count == "0" and 
-        event.category == "Software" and
-        ("patch" in event.short_description.lower() or
-         "update" in event.short_description.lower() or
-         "upgrade" in event.short_description.lower() or
-         "deployment" in event.short_description.lower() or
-         "configuration" in event.short_description.lower() or
-         "database" in event.short_description.lower())
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and ("patch" in event.short_description.lower() or "update" in event.short_description.lower() or "upgrade" in event.short_description.lower() or "deployment" in event.short_description.lower() or "configuration" in event.short_description.lower() or "database" in event.short_description.lower())
       action:
         debug:
           msg: "Software incident {{ event.number }} with change-related keywords requires change request"
