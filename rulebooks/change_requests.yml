@@ -31,7 +31,7 @@
   rules:
     # Create change request for software incidents with patch keyword
     - name: Create change request for software incidents with patch keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and ("patch" in event.short_description or "Patch" in event.short_description or "PATCH" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "1" and event.category == "Software" and ("patch" in event.short_description or "Patch" in event.short_description or "PATCH" in event.short_description)
       action:
         debug:
           msg: "Software incident {{ event.number }} with patch keyword requires change request"
@@ -49,7 +49,7 @@
 
     # Create change request for software incidents with update keyword
     - name: Create change request for software incidents with update keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and ("update" in event.short_description or "Update" in event.short_description or "UPDATE" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "1" and event.category == "Software" and ("update" in event.short_description or "Update" in event.short_description or "UPDATE" in event.short_description)
       action:
         debug:
           msg: "Software incident {{ event.number }} with update keyword requires change request"
@@ -67,7 +67,7 @@
 
     # Create change request for software incidents with upgrade keyword
     - name: Create change request for software incidents with upgrade keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and ("upgrade" in event.short_description or "Upgrade" in event.short_description or "UPGRADE" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "1" and event.category == "Software" and ("upgrade" in event.short_description or "Upgrade" in event.short_description or "UPGRADE" in event.short_description)
       action:
         debug:
           msg: "Software incident {{ event.number }} with upgrade keyword requires change request"
@@ -85,7 +85,7 @@
 
     # Create change request for software incidents with deployment keyword
     - name: Create change request for software incidents with deployment keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and ("deployment" in event.short_description or "Deployment" in event.short_description or "DEPLOYMENT" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "1" and event.category == "Software" and ("deployment" in event.short_description or "Deployment" in event.short_description or "DEPLOYMENT" in event.short_description)
       action:
         debug:
           msg: "Software incident {{ event.number }} with deployment keyword requires change request"
@@ -103,7 +103,7 @@
 
     # Create change request for software incidents with configuration keyword
     - name: Create change request for software incidents with configuration keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and ("configuration" in event.short_description or "Configuration" in event.short_description or "CONFIGURATION" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "1" and event.category == "Software" and ("configuration" in event.short_description or "Configuration" in event.short_description or "CONFIGURATION" in event.short_description)
       action:
         debug:
           msg: "Software incident {{ event.number }} with configuration keyword requires change request"
@@ -121,7 +121,7 @@
 
     # Create change request for software incidents with database keyword
     - name: Create change request for software incidents with database keyword
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and ("database" in event.short_description or "Database" in event.short_description or "DATABASE" in event.short_description)
+      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "1" and event.category == "Software" and ("database" in event.short_description or "Database" in event.short_description or "DATABASE" in event.short_description)
       action:
         debug:
           msg: "Software incident {{ event.number }} with database keyword requires change request"
