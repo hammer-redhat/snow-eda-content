@@ -1,0 +1,21 @@
+---
+- name: Generic new poll for new records in ServiceNow and process the incidents. 
+  hosts: all
+  sources:
+    - name: Watch for any updated incidents
+      servicenow.itsm.records:
+        table: change_request
+        interval: 5
+
+  rules:
+    - name: Create a change request when needed.
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0"
+      action:
+        run_job_template:
+          name: "EDA Enrich ServiceNow REQ"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              req_sys_id: "{{ event.sys_id }}"
+              req_number: "{{ event.number }}"
