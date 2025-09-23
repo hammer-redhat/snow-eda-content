@@ -57,35 +57,8 @@
         urgency: "{{ incident_details.records[0].urgency }}"
         impact: "{{ incident_details.records[0].impact }}"
         assignment_group: "{{ incident_details.records[0].assignment_group }}"
-        assigned_to: "{{ incident_details.records[0].assigned_to }}"
-        change_type: "{{ change_type }}"
         risk: medium
-        implementation_plan: |
-          Implementation Plan for Change Request related to Incident {{ incident_number }}:
-          
-          1. Review incident details and root cause analysis
-          2. Assess impact and risk of proposed changes
-          3. Develop detailed implementation steps
-          4. Schedule change window during maintenance hours
-          5. Execute change with proper testing
-          6. Validate change resolution
-          7. Close change request and update incident
-        test_plan: |
-          Test Plan for Change Request related to Incident {{ incident_number }}:
-          
-          1. Pre-change testing to establish baseline
-          2. Test change in non-production environment
-          3. Validate all functionality works as expected
-          4. Perform rollback testing if applicable
-          5. Post-change validation in production
-        backout_plan: |
-          Backout Plan for Change Request related to Incident {{ incident_number }}:
-          
-          1. Document current system state before change
-          2. Prepare rollback procedures
-          3. Test rollback process in non-production
-          4. Ensure rollback can be executed within acceptable timeframe
-          5. Have rollback team on standby during implementation
+        type: "{{ change_type }}"
       register: change_request_result
 
     - name: Debug change request creation result
