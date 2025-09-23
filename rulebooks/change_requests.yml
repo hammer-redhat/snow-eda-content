@@ -36,7 +36,7 @@
         debug:
           msg: "Software incident {{ event.number }} with patch keyword requires change request"
         run_job_template:
-          name: "Create Software Change Request"
+          name: "SNOW: Create Software Change Request"
           organization: SNOW
           post_events: true
           job_args:
@@ -54,7 +54,7 @@
         debug:
           msg: "Software incident {{ event.number }} with update keyword requires change request"
         run_job_template:
-          name: "Create Software Change Request"
+          name: "SNOW: Create Software Change Request"
           organization: SNOW
           post_events: true
           job_args:
@@ -72,7 +72,7 @@
         debug:
           msg: "Software incident {{ event.number }} with upgrade keyword requires change request"
         run_job_template:
-          name: "Create Software Change Request"
+          name: "SNOW: Create Software Change Request"
           organization: SNOW
           post_events: true
           job_args:
@@ -90,7 +90,7 @@
         debug:
           msg: "Software incident {{ event.number }} with deployment keyword requires change request"
         run_job_template:
-          name: "Create Software Change Request"
+          name: "SNOW: Create Software Change Request"
           organization: SNOW
           post_events: true
           job_args:
@@ -108,7 +108,7 @@
         debug:
           msg: "Software incident {{ event.number }} with configuration keyword requires change request"
         run_job_template:
-          name: "Create Software Change Request"
+          name: "SNOW: Create Software Change Request"
           organization: SNOW
           post_events: true
           job_args:
@@ -126,7 +126,7 @@
         debug:
           msg: "Software incident {{ event.number }} with database keyword requires change request"
         run_job_template:
-          name: "Create Software Change Request"
+          name: "SNOW: Create Software Change Request"
           organization: SNOW
           post_events: true
           job_args:
