@@ -73,11 +73,14 @@
     - name: Link change request to original incident
       servicenow.itsm.incident:
         sys_id: "{{ incident_sys_id }}"
-        work_notes: |
-          Change Request Created: {{ change_request_result.record.number }}
-          Change Request Sys ID: {{ change_request_result.record.sys_id }}
+        description: |
+          This incident has been linked to change request {{ change_request_result.record.number }} for resolution.
           
-          This incident has been linked to a change request for resolution.
+          Change Request Details:
+          - Number: {{ change_request_result.record.number }}
+          - Sys ID: {{ change_request_result.record.sys_id }}
+          - State: {{ change_request_result.record.state }}
+          
           Please refer to the change request for implementation details and progress updates.
       when: change_request_result is defined and change_request_result.record is defined
 
