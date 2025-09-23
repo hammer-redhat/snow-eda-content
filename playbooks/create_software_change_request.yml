@@ -65,10 +65,10 @@
       debug:
         msg: |
           Change Request Created Successfully:
-          - Change Request Number: {{ change_request_result.change_request.number }}
-          - Change Request Sys ID: {{ change_request_result.change_request.sys_id }}
-          - State: {{ change_request_result.change_request.state }}
-          - Short Description: {{ change_request_result.change_request.short_description }}
+          - Change Request Number: {{ change_request_result.record.number }}
+          - Change Request Sys ID: {{ change_request_result.record.sys_id }}
+          - State: {{ change_request_result.record.state }}
+          - Short Description: {{ change_request_result.record.short_description }}
 
     - name: Link change request to original incident
       servicenow.itsm.incident:
@@ -77,12 +77,12 @@
         password: "{{ servicenow_password }}"
         sys_id: "{{ incident_sys_id }}"
         work_notes: |
-          Change Request Created: {{ change_request_result.change_request.number }}
-          Change Request Sys ID: {{ change_request_result.change_request.sys_id }}
+          Change Request Created: {{ change_request_result.record.number }}
+          Change Request Sys ID: {{ change_request_result.record.sys_id }}
           
           This incident has been linked to a change request for resolution.
           Please refer to the change request for implementation details and progress updates.
-      when: change_request_result is defined and change_request_result.change_request is defined
+      when: change_request_result is defined and change_request_result.record is defined
 
     - name: Post change request creation event to EDA
       ansible.builtin.uri:
@@ -97,8 +97,8 @@
           data:
             incident_number: "{{ incident_number }}"
             incident_sys_id: "{{ incident_sys_id }}"
-            change_request_number: "{{ change_request_result.change_request.number }}"
-            change_request_sys_id: "{{ change_request_result.change_request.sys_id }}"
+            change_request_number: "{{ change_request_result.record.number }}"
+            change_request_sys_id: "{{ change_request_result.record.sys_id }}"
             change_type: "{{ change_type }}"
             change_reason: "{{ change_reason }}"
             created_at: "{{ ansible_date_time.iso8601 }}"
@@ -109,8 +109,8 @@
     - name: Set fact for change request details
       set_fact:
         change_request_created: true
-        change_request_number: "{{ change_request_result.change_request.number }}"
-        change_request_sys_id: "{{ change_request_result.change_request.sys_id }}"
+        change_request_number: "{{ change_request_result.record.number }}"
+        change_request_sys_id: "{{ change_request_result.record.sys_id }}"
 
     - name: Display success message
       debug:
@@ -118,8 +118,8 @@
           ✅ Change Request Successfully Created!
           
           Change Request Details:
-          - Number: {{ change_request_result.change_request.number }}
-          - Sys ID: {{ change_request_result.change_request.sys_id }}
+          - Number: {{ change_request_result.record.number }}
+          - Sys ID: {{ change_request_result.record.sys_id }}
           - Related Incident: {{ incident_number }}
           - Change Type: {{ change_type }}
           - Reason: {{ change_reason }}
