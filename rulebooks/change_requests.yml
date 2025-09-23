@@ -29,23 +29,12 @@
           - close_notes
 
   rules:
-    # Create change request for software incidents with specific keywords
-    - name: Create change request for software incidents with specific keywords
-      condition:
-        all:
-          - event.sys_class_name == "incident"
-          - event.sys_mod_count == "0"
-          - event.category == "Software"
-          - any:
-              - "patch" in event.short_description.lower()
-              - "update" in event.short_description.lower()
-              - "upgrade" in event.short_description.lower()
-              - "deployment" in event.short_description.lower()
-              - "configuration" in event.short_description.lower()
-              - "database" in event.short_description.lower()
+    # Create change request for software incidents with patch keyword
+    - name: Create change request for software incidents with patch keyword
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and "patch" in event.short_description.lower()
       action:
         debug:
-          msg: "Software incident {{ event.number }} with change-related keywords requires change request"
+          msg: "Software incident {{ event.number }} with patch keyword requires change request"
         run_job_template:
           name: "Create Software Change Request"
           organization: SNOW
@@ -56,4 +45,94 @@
               incident_number: "{{ event.number }}"
               incident_category: "{{ event.category }}"
               change_type: "standard"
-              change_reason: "Software incident requiring configuration or deployment changes"
+              change_reason: "Software incident requiring patch changes"
+
+    # Create change request for software incidents with update keyword
+    - name: Create change request for software incidents with update keyword
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and "update" in event.short_description.lower()
+      action:
+        debug:
+          msg: "Software incident {{ event.number }} with update keyword requires change request"
+        run_job_template:
+          name: "Create Software Change Request"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              incident_sys_id: "{{ event.sys_id }}"
+              incident_number: "{{ event.number }}"
+              incident_category: "{{ event.category }}"
+              change_type: "standard"
+              change_reason: "Software incident requiring update changes"
+
+    # Create change request for software incidents with upgrade keyword
+    - name: Create change request for software incidents with upgrade keyword
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and "upgrade" in event.short_description.lower()
+      action:
+        debug:
+          msg: "Software incident {{ event.number }} with upgrade keyword requires change request"
+        run_job_template:
+          name: "Create Software Change Request"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              incident_sys_id: "{{ event.sys_id }}"
+              incident_number: "{{ event.number }}"
+              incident_category: "{{ event.category }}"
+              change_type: "standard"
+              change_reason: "Software incident requiring upgrade changes"
+
+    # Create change request for software incidents with deployment keyword
+    - name: Create change request for software incidents with deployment keyword
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and "deployment" in event.short_description.lower()
+      action:
+        debug:
+          msg: "Software incident {{ event.number }} with deployment keyword requires change request"
+        run_job_template:
+          name: "Create Software Change Request"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              incident_sys_id: "{{ event.sys_id }}"
+              incident_number: "{{ event.number }}"
+              incident_category: "{{ event.category }}"
+              change_type: "standard"
+              change_reason: "Software incident requiring deployment changes"
+
+    # Create change request for software incidents with configuration keyword
+    - name: Create change request for software incidents with configuration keyword
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and "configuration" in event.short_description.lower()
+      action:
+        debug:
+          msg: "Software incident {{ event.number }} with configuration keyword requires change request"
+        run_job_template:
+          name: "Create Software Change Request"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              incident_sys_id: "{{ event.sys_id }}"
+              incident_number: "{{ event.number }}"
+              incident_category: "{{ event.category }}"
+              change_type: "standard"
+              change_reason: "Software incident requiring configuration changes"
+
+    # Create change request for software incidents with database keyword
+    - name: Create change request for software incidents with database keyword
+      condition: event.sys_class_name == "incident" and event.sys_mod_count == "0" and event.category == "Software" and "database" in event.short_description.lower()
+      action:
+        debug:
+          msg: "Software incident {{ event.number }} with database keyword requires change request"
+        run_job_template:
+          name: "Create Software Change Request"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              incident_sys_id: "{{ event.sys_id }}"
+              incident_number: "{{ event.number }}"
+              incident_category: "{{ event.category }}"
+              change_type: "standard"
+              change_reason: "Software incident requiring database changes"
