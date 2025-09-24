@@ -93,7 +93,7 @@
     - name: Display success message
       debug:
         msg: |
-          ✅ Change Request Successfully Created!
+          Change Request Successfully Created!
 
           Change Request Details:
           - Number: {{ change_request_result.record.number }}
