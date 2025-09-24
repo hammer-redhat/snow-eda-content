@@ -21,7 +21,7 @@
               req_number: "{{ event.number }}"
 
     - name: Create a change request if needed.
-      condition: event.sys_class_name == "incident" and event.sys_mod_count == "1" and (event.category == "Software" or event.category == "software") and event.short_description == "test patch deployment"
+      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "0" and (event.category == "Software" or event.category == "software") and event.short_description == "test patch deployment"
       action:
         run_job_template:
           name: "SNOW: Create Software Change Request"
