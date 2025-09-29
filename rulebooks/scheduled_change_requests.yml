@@ -1,8 +1,8 @@
 ---
-- name: Monitor ServiceNow Change Requests for Scheduled and Ready-to-Work Status
+- name: Monitor ServiceNow Change Requests for Test Patch Deployment Implementation
   hosts: all
   sources:
-    - name: Monitor ServiceNow change requests for scheduled status
+    - name: Monitor ServiceNow change requests for test patch deployment implementation
       servicenow.itsm.records:
         table: change_request
         interval: 10
@@ -48,12 +48,12 @@
           - resolution_notes
 
   rules:
-    # Monitor for change requests that are scheduled and ready to be worked
-    - name: Process scheduled change requests ready for implementation
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.start_date is defined
+    # Monitor for change requests in implementation state with test patch deployment description
+    - name: Process test patch deployment change requests in implementation
+      condition: event.sys_class_name == "change_request" and event.state == "implementation" and event.short_description == "test patch deployment"
       action:
         run_job_template:
-          name: "Process Scheduled Change Request"
+          name: "Process Test Patch Deployment Change Request"
           organization: SNOW
           post_events: true
           job_args:
@@ -61,6 +61,7 @@
               change_request_sys_id: "{{ event.sys_id }}"
               change_request_number: "{{ event.number }}"
               change_request_state: "{{ event.state }}"
+              short_description: "{{ event.short_description }}"
               start_date: "{{ event.start_date }}"
               planned_end_date: "{{ event.planned_end_date }}"
               assignment_group: "{{ event.assignment_group }}"
@@ -70,13 +71,15 @@
               impact: "{{ event.impact }}"
               change_type: "{{ event.type }}"
               risk_level: "{{ event.risk }}"
+              work_notes: "{{ event.work_notes }}"
+              implementation_notes: "{{ event.implementation_notes }}"
 
-    # Monitor for change requests that have been updated to scheduled status
-    - name: Handle change requests newly scheduled
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.sys_mod_count > "0"
+    # Monitor for test patch deployment change requests that have been updated during implementation
+    - name: Track test patch deployment implementation progress
+      condition: event.sys_class_name == "change_request" and event.state == "implementation" and event.short_description == "test patch deployment" and event.sys_mod_count > "0"
       action:
         run_job_template:
-          name: "Notify Change Request Scheduled"
+          name: "Track Test Patch Deployment Progress"
           organization: SNOW
           post_events: true
           job_args:
@@ -84,41 +87,23 @@
               change_request_sys_id: "{{ event.sys_id }}"
               change_request_number: "{{ event.number }}"
               change_request_state: "{{ event.state }}"
-              start_date: "{{ event.start_date }}"
-              planned_end_date: "{{ event.planned_end_date }}"
-              assignment_group: "{{ event.assignment_group }}"
-              assigned_to: "{{ event.assigned_to }}"
               short_description: "{{ event.short_description }}"
-              priority: "{{ event.priority }}"
-              urgency: "{{ event.urgency }}"
-              impact: "{{ event.impact }}"
-
-    # Monitor for change requests that are in implementation phase
-    - name: Track change requests in implementation phase
-      condition: event.sys_class_name == "change_request" and event.state == "implementation" and event.sys_mod_count > "0"
-      action:
-        run_job_template:
-          name: "Track Change Implementation Progress"
-          organization: SNOW
-          post_events: true
-          job_args:
-            extra_vars:
-              change_request_sys_id: "{{ event.sys_id }}"
-              change_request_number: "{{ event.number }}"
-              change_request_state: "{{ event.state }}"
               start_date: "{{ event.start_date }}"
               planned_end_date: "{{ event.planned_end_date }}"
               assignment_group: "{{ event.assignment_group }}"
               assigned_to: "{{ event.assigned_to }}"
               work_notes: "{{ event.work_notes }}"
               implementation_notes: "{{ event.implementation_notes }}"
+              priority: "{{ event.priority }}"
+              urgency: "{{ event.urgency }}"
+              impact: "{{ event.impact }}"
 
-    # Monitor for high-priority change requests that are scheduled
-    - name: Escalate high-priority scheduled change requests
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and (event.priority == "1" or event.priority == "2") and event.start_date is defined
+    # Monitor for high-priority test patch deployment change requests in implementation
+    - name: Escalate high-priority test patch deployment change requests
+      condition: event.sys_class_name == "change_request" and event.state == "implementation" and event.short_description == "test patch deployment" and (event.priority == "1" or event.priority == "2")
       action:
         run_job_template:
-          name: "Process Scheduled Change Request"
+          name: "Process Test Patch Deployment Change Request"
           organization: SNOW
           post_events: true
           job_args:
@@ -126,6 +111,7 @@
               change_request_sys_id: "{{ event.sys_id }}"
               change_request_number: "{{ event.number }}"
               change_request_state: "{{ event.state }}"
+              short_description: "{{ event.short_description }}"
               priority: "{{ event.priority }}"
               urgency: "{{ event.urgency }}"
               impact: "{{ event.impact }}"
@@ -133,16 +119,17 @@
               planned_end_date: "{{ event.planned_end_date }}"
               assignment_group: "{{ event.assignment_group }}"
               assigned_to: "{{ event.assigned_to }}"
-              short_description: "{{ event.short_description }}"
               change_type: "{{ event.type }}"
               risk_level: "{{ event.risk }}"
+              work_notes: "{{ event.work_notes }}"
+              implementation_notes: "{{ event.implementation_notes }}"
 
-    # Monitor for change requests approaching their planned start date
-    - name: Alert for change requests approaching start date
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.start_date is defined
+    # Monitor for test patch deployment change requests approaching their planned end date
+    - name: Alert for test patch deployment change requests approaching end date
+      condition: event.sys_class_name == "change_request" and event.state == "implementation" and event.short_description == "test patch deployment" and event.planned_end_date is defined
       action:
         run_job_template:
-          name: "Alert Change Request Starting Soon"
+          name: "Alert Test Patch Deployment Ending Soon"
           organization: SNOW
           post_events: true
           job_args:
@@ -150,12 +137,12 @@
               change_request_sys_id: "{{ event.sys_id }}"
               change_request_number: "{{ event.number }}"
               change_request_state: "{{ event.state }}"
+              short_description: "{{ event.short_description }}"
               start_date: "{{ event.start_date }}"
               planned_end_date: "{{ event.planned_end_date }}"
               assignment_group: "{{ event.assignment_group }}"
               assigned_to: "{{ event.assigned_to }}"
-              short_description: "{{ event.short_description }}"
               priority: "{{ event.priority }}"
               urgency: "{{ event.urgency }}"
               impact: "{{ event.impact }}"
-              alert_type: "start_date_approaching"
+              alert_type: "end_date_approaching"
