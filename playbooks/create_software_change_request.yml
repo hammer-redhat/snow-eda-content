@@ -47,8 +47,7 @@
 
     - name: Check for existing change requests linked to incident
       servicenow.itsm.change_request_info:
-        query:
-          - parent: "{{ incident_sys_id }}"
+        sysparm_query: "descriptionLIKE{{ incident_number }}"
       register: existing_change_requests
 
     - name: Debug existing change requests
