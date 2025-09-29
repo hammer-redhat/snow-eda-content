@@ -7,8 +7,8 @@
     caller: admin
     urgency: "{{ sn_urgency }}"
     impact: "{{ sn_impact }}"
-    category: "{{ sn_category }}"
     other:
+      category: "{{ sn_category }}"
       u_operating_system: "{{ os | default(omit) }}"
       u_ip_address: "{{ ip_addr | default(omit) }}"
       u_vm_name: "{{ inventory_hostname | default(omit) }}"
