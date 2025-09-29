@@ -1,0 +1,107 @@
+---
+- name: Process Scheduled Change Request Ready for Implementation
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # Extract variables from the event data structure
+    change_request_number: "{{ ansible_eda.event.change_request_number }}"
+    change_request_sys_id: "{{ ansible_eda.event.change_request_sys_id }}"
+    change_request_state: "{{ ansible_eda.event.change_request_state }}"
+    planned_start_date: "{{ ansible_eda.event.planned_start_date }}"
+    planned_end_date: "{{ ansible_eda.event.planned_end_date }}"
+    assignment_group: "{{ ansible_eda.event.assignment_group }}"
+    assigned_to: "{{ ansible_eda.event.assigned_to }}"
+    priority: "{{ ansible_eda.event.priority }}"
+    urgency: "{{ ansible_eda.event.urgency }}"
+    impact: "{{ ansible_eda.event.impact }}"
+    change_type: "{{ ansible_eda.event.change_type }}"
+    risk_level: "{{ ansible_eda.event.risk_level }}"
+
+  tasks:
+    - name: Debug received change request data
+      debug:
+        msg: |
+          Received ServiceNow change request data:
+          - Change Request Number: {{ change_request_number }}
+          - Change Request Sys ID: {{ change_request_sys_id }}
+          - State: {{ change_request_state }}
+          - Planned Start Date: {{ planned_start_date }}
+          - Planned End Date: {{ planned_end_date }}
+          - Assignment Group: {{ assignment_group }}
+          - Assigned To: {{ assigned_to }}
+          - Priority: {{ priority }}
+          - Urgency: {{ urgency }}
+          - Impact: {{ impact }}
+          - Change Type: {{ change_type }}
+          - Risk Level: {{ risk_level }}
+
+    - name: Get change request details from ServiceNow
+      servicenow.itsm.change_request_info:
+        sys_id: "{{ change_request_sys_id }}"
+      register: change_request_details
+
+    - name: Debug change request details
+      debug:
+        msg: |
+          Change Request Details:
+          - Short Description: {{ change_request_details.record.short_description }}
+          - Description: {{ change_request_details.record.description }}
+          - State: {{ change_request_details.record.state }}
+          - Priority: {{ change_request_details.record.priority }}
+          - Urgency: {{ change_request_details.record.urgency }}
+          - Impact: {{ change_request_details.record.impact }}
+          - Assignment Group: {{ change_request_details.record.assignment_group }}
+          - Assigned To: {{ change_request_details.record.assigned_to }}
+          - Planned Start Date: {{ change_request_details.record.planned_start_date }}
+          - Planned End Date: {{ change_request_details.record.planned_end_date }}
+          - Risk: {{ change_request_details.record.risk }}
+          - Type: {{ change_request_details.record.type }}
+
+    - name: Update change request to implementation state
+      servicenow.itsm.change_request:
+        sys_id: "{{ change_request_sys_id }}"
+        state: implementation
+        work_notes: |
+          Change request is now ready for implementation.
+          
+          Implementation Details:
+          - Scheduled Start: {{ planned_start_date }}
+          - Scheduled End: {{ planned_end_date }}
+          - Priority: {{ priority }}
+          - Urgency: {{ urgency }}
+          - Impact: {{ impact }}
+          - Risk Level: {{ risk_level }}
+          
+          This change request has been automatically moved to implementation phase by Event-Driven Ansible.
+        start_date: "{{ ansible_date_time.iso8601 }}"
+      register: change_request_update_result
+
+    - name: Debug change request update result
+      debug:
+        msg: |
+          Change Request Updated Successfully:
+          - Change Request Number: {{ change_request_update_result.record.number }}
+          - New State: {{ change_request_update_result.record.state }}
+          - Start Date: {{ change_request_update_result.record.start_date }}
+          - Work Notes Updated: Yes
+
+    - name: Set fact for change request processing
+      set_fact:
+        change_request_processed: true
+        change_request_number: "{{ change_request_number }}"
+        change_request_sys_id: "{{ change_request_sys_id }}"
+        new_state: "{{ change_request_update_result.record.state }}"
+
+    - name: Display success message
+      debug:
+        msg: |
+          Change Request Successfully Processed!
+
+          Change Request Details:
+          - Number: {{ change_request_number }}
+          - Sys ID: {{ change_request_sys_id }}
+          - Previous State: {{ change_request_state }}
+          - New State: {{ change_request_update_result.record.state }}
+          - Implementation Start: {{ change_request_update_result.record.start_date }}
+
+          The change request is now in implementation phase and ready for work to begin.
