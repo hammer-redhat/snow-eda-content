@@ -25,7 +25,7 @@
           - sys_class_name
           - work_notes
           - comments
-          - planned_start_date
+          - start_date
           - planned_end_date
           - start_date
           - end_date
@@ -50,7 +50,7 @@
   rules:
     # Monitor for change requests that are scheduled and ready to be worked
     - name: Process scheduled change requests ready for implementation
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.planned_start_date is defined
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.start_date is defined
       action:
         run_job_template:
           name: "Process Scheduled Change Request"
@@ -61,7 +61,7 @@
               change_request_sys_id: "{{ event.sys_id }}"
               change_request_number: "{{ event.number }}"
               change_request_state: "{{ event.state }}"
-              planned_start_date: "{{ event.planned_start_date }}"
+              start_date: "{{ event.start_date }}"
               planned_end_date: "{{ event.planned_end_date }}"
               assignment_group: "{{ event.assignment_group }}"
               assigned_to: "{{ event.assigned_to }}"
@@ -84,7 +84,7 @@
               change_request_sys_id: "{{ event.sys_id }}"
               change_request_number: "{{ event.number }}"
               change_request_state: "{{ event.state }}"
-              planned_start_date: "{{ event.planned_start_date }}"
+              start_date: "{{ event.start_date }}"
               planned_end_date: "{{ event.planned_end_date }}"
               assignment_group: "{{ event.assignment_group }}"
               assigned_to: "{{ event.assigned_to }}"
@@ -115,7 +115,7 @@
 
     # Monitor for high-priority change requests that are scheduled
     - name: Escalate high-priority scheduled change requests
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and (event.priority == "1" or event.priority == "2") and event.planned_start_date is defined
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and (event.priority == "1" or event.priority == "2") and event.start_date is defined
       action:
         run_job_template:
           name: "Process Scheduled Change Request"
@@ -129,7 +129,7 @@
               priority: "{{ event.priority }}"
               urgency: "{{ event.urgency }}"
               impact: "{{ event.impact }}"
-              planned_start_date: "{{ event.planned_start_date }}"
+              start_date: "{{ event.start_date }}"
               planned_end_date: "{{ event.planned_end_date }}"
               assignment_group: "{{ event.assignment_group }}"
               assigned_to: "{{ event.assigned_to }}"
@@ -139,7 +139,7 @@
 
     # Monitor for change requests approaching their planned start date
     - name: Alert for change requests approaching start date
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.planned_start_date is defined
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.start_date is defined
       action:
         run_job_template:
           name: "Alert Change Request Starting Soon"
@@ -150,7 +150,7 @@
               change_request_sys_id: "{{ event.sys_id }}"
               change_request_number: "{{ event.number }}"
               change_request_state: "{{ event.state }}"
-              planned_start_date: "{{ event.planned_start_date }}"
+              start_date: "{{ event.start_date }}"
               planned_end_date: "{{ event.planned_end_date }}"
               assignment_group: "{{ event.assignment_group }}"
               assigned_to: "{{ event.assigned_to }}"
