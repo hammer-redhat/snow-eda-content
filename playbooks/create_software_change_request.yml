@@ -45,6 +45,20 @@
           - Assignment Group: {{ incident_assignment_group }}
           - Assigned To: {{ incident_assigned_to }}
 
+    - name: Check for existing change requests linked to incident
+      servicenow.itsm.change_request_info:
+        query:
+          - parent: "{{ incident_sys_id }}"
+      register: existing_change_requests
+
+    - name: Debug existing change requests
+      debug:
+        msg: |
+          Existing Change Requests Found: {{ existing_change_requests.records | length }}
+          {% for cr in existing_change_requests.records %}
+          - Change Request: {{ cr.number }} ({{ cr.sys_id }}) - State: {{ cr.state }}
+          {% endfor %}
+
     - name: Create change request in ServiceNow
       servicenow.itsm.change_request:
         state: new
@@ -75,6 +89,7 @@
         risk: medium
         type: "{{ change_type }}"
       register: change_request_result
+      when: existing_change_requests.records | length == 0
 
     - name: Debug change request creation result
       debug:
@@ -84,6 +99,7 @@
           - Change Request Sys ID: {{ change_request_result.record.sys_id }}
           - State: {{ change_request_result.record.state }}
           - Short Description: {{ change_request_result.record.short_description }}
+      when: change_request_result is defined and change_request_result.record is defined
 
     - name: Link change request to original incident
       servicenow.itsm.incident:
@@ -104,8 +120,9 @@
         change_request_created: true
         change_request_number: "{{ change_request_result.record.number }}"
         change_request_sys_id: "{{ change_request_result.record.sys_id }}"
+      when: change_request_result is defined and change_request_result.record is defined
 
-    - name: Display success message
+    - name: Display success message for new change request
       debug:
         msg: |
           Change Request Successfully Created!
@@ -118,3 +135,17 @@
           - Reason: {{ change_reason }}
 
           The change request has been linked to the original incident and is ready for review and approval.
+      when: change_request_result is defined and change_request_result.record is defined
+
+    - name: Display message when change request already exists
+      debug:
+        msg: |
+          Skipping Change Request Creation - Incident Already Has Linked Change Request(s)
+
+          Existing Change Request(s):
+          {% for cr in existing_change_requests.records %}
+          - Change Request: {{ cr.number }} ({{ cr.sys_id }}) - State: {{ cr.state }}
+          {% endfor %}
+
+          Incident {{ incident_number }} already has {{ existing_change_requests.records | length }} linked change request(s). No new change request will be created.
+      when: existing_change_requests.records | length > 0
