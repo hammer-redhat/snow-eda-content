@@ -50,7 +50,7 @@
   rules:
     # Monitor for change requests that are scheduled and ready to be worked
     - name: Process scheduled change requests ready for implementation
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.planned_start_date is defined and event.planned_start_date <= "{{ ansible_date_time.iso8601 }}"
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.planned_start_date is defined
       action:
         run_job_template:
           name: "Process Scheduled Change Request"
@@ -115,10 +115,10 @@
 
     # Monitor for high-priority change requests that are scheduled
     - name: Escalate high-priority scheduled change requests
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and (event.priority == "1" or event.priority == "2") and event.planned_start_date is defined and event.planned_start_date <= "{{ ansible_date_time.iso8601 }}"
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and (event.priority == "1" or event.priority == "2") and event.planned_start_date is defined
       action:
         run_job_template:
-          name: "Escalate High-Priority Change Request"
+          name: "Process Scheduled Change Request"
           organization: SNOW
           post_events: true
           job_args:
@@ -134,11 +134,12 @@
               assignment_group: "{{ event.assignment_group }}"
               assigned_to: "{{ event.assigned_to }}"
               short_description: "{{ event.short_description }}"
-              escalation_reason: "High-priority change request scheduled and ready for implementation"
+              change_type: "{{ event.type }}"
+              risk_level: "{{ event.risk }}"
 
     # Monitor for change requests approaching their planned start date
     - name: Alert for change requests approaching start date
-      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.planned_start_date is defined and event.planned_start_date > "{{ ansible_date_time.iso8601 }}" and event.planned_start_date <= "{{ (ansible_date_time.epoch | int + 3600) | strftime('%Y-%m-%d %H:%M:%S') }}"
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.planned_start_date is defined
       action:
         run_job_template:
           name: "Alert Change Request Starting Soon"
