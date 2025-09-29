@@ -1,0 +1,161 @@
+---
+- name: Monitor ServiceNow Change Requests for Scheduled and Ready-to-Work Status
+  hosts: all
+  sources:
+    - name: Monitor ServiceNow change requests for scheduled status
+      servicenow.itsm.records:
+        table: change_request
+        interval: 10
+        fields:
+          - sys_id
+          - number
+          - short_description
+          - description
+          - state
+          - priority
+          - urgency
+          - impact
+          - category
+          - subcategory
+          - assignment_group
+          - assigned_to
+          - sys_created_on
+          - sys_updated_on
+          - sys_mod_count
+          - sys_class_name
+          - work_notes
+          - comments
+          - planned_start_date
+          - planned_end_date
+          - start_date
+          - end_date
+          - risk
+          - type
+          - reason
+          - justification
+          - implementation_plan
+          - rollback_plan
+          - test_plan
+          - communication_plan
+          - approval_set
+          - change_plan
+          - risk_assessment
+          - business_justification
+          - technical_justification
+          - implementation_notes
+          - close_code
+          - close_notes
+          - resolution_notes
+
+  rules:
+    # Monitor for change requests that are scheduled and ready to be worked
+    - name: Process scheduled change requests ready for implementation
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.planned_start_date is defined
+      action:
+        run_job_template:
+          name: "Process Scheduled Change Request"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              change_request_sys_id: "{{ event.sys_id }}"
+              change_request_number: "{{ event.number }}"
+              change_request_state: "{{ event.state }}"
+              planned_start_date: "{{ event.planned_start_date }}"
+              planned_end_date: "{{ event.planned_end_date }}"
+              assignment_group: "{{ event.assignment_group }}"
+              assigned_to: "{{ event.assigned_to }}"
+              priority: "{{ event.priority }}"
+              urgency: "{{ event.urgency }}"
+              impact: "{{ event.impact }}"
+              change_type: "{{ event.type }}"
+              risk_level: "{{ event.risk }}"
+
+    # Monitor for change requests that have been updated to scheduled status
+    - name: Handle change requests newly scheduled
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.sys_mod_count > "0"
+      action:
+        run_job_template:
+          name: "Notify Change Request Scheduled"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              change_request_sys_id: "{{ event.sys_id }}"
+              change_request_number: "{{ event.number }}"
+              change_request_state: "{{ event.state }}"
+              planned_start_date: "{{ event.planned_start_date }}"
+              planned_end_date: "{{ event.planned_end_date }}"
+              assignment_group: "{{ event.assignment_group }}"
+              assigned_to: "{{ event.assigned_to }}"
+              short_description: "{{ event.short_description }}"
+              priority: "{{ event.priority }}"
+              urgency: "{{ event.urgency }}"
+              impact: "{{ event.impact }}"
+
+    # Monitor for change requests that are in implementation phase
+    - name: Track change requests in implementation phase
+      condition: event.sys_class_name == "change_request" and event.state == "implementation" and event.sys_mod_count > "0"
+      action:
+        run_job_template:
+          name: "Track Change Implementation Progress"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              change_request_sys_id: "{{ event.sys_id }}"
+              change_request_number: "{{ event.number }}"
+              change_request_state: "{{ event.state }}"
+              start_date: "{{ event.start_date }}"
+              planned_end_date: "{{ event.planned_end_date }}"
+              assignment_group: "{{ event.assignment_group }}"
+              assigned_to: "{{ event.assigned_to }}"
+              work_notes: "{{ event.work_notes }}"
+              implementation_notes: "{{ event.implementation_notes }}"
+
+    # Monitor for high-priority change requests that are scheduled
+    - name: Escalate high-priority scheduled change requests
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and (event.priority == "1" or event.priority == "2") and event.planned_start_date is defined
+      action:
+        run_job_template:
+          name: "Process Scheduled Change Request"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              change_request_sys_id: "{{ event.sys_id }}"
+              change_request_number: "{{ event.number }}"
+              change_request_state: "{{ event.state }}"
+              priority: "{{ event.priority }}"
+              urgency: "{{ event.urgency }}"
+              impact: "{{ event.impact }}"
+              planned_start_date: "{{ event.planned_start_date }}"
+              planned_end_date: "{{ event.planned_end_date }}"
+              assignment_group: "{{ event.assignment_group }}"
+              assigned_to: "{{ event.assigned_to }}"
+              short_description: "{{ event.short_description }}"
+              change_type: "{{ event.type }}"
+              risk_level: "{{ event.risk }}"
+
+    # Monitor for change requests approaching their planned start date
+    - name: Alert for change requests approaching start date
+      condition: event.sys_class_name == "change_request" and event.state == "scheduled" and event.planned_start_date is defined
+      action:
+        run_job_template:
+          name: "Alert Change Request Starting Soon"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              change_request_sys_id: "{{ event.sys_id }}"
+              change_request_number: "{{ event.number }}"
+              change_request_state: "{{ event.state }}"
+              planned_start_date: "{{ event.planned_start_date }}"
+              planned_end_date: "{{ event.planned_end_date }}"
+              assignment_group: "{{ event.assignment_group }}"
+              assigned_to: "{{ event.assigned_to }}"
+              short_description: "{{ event.short_description }}"
+              priority: "{{ event.priority }}"
+              urgency: "{{ event.urgency }}"
+              impact: "{{ event.impact }}"
+              alert_type: "start_date_approaching"

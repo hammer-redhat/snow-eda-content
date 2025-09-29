@@ -1,0 +1,93 @@
+---
+- name: Notify Stakeholders of Scheduled Change Request
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # Extract variables from the event data structure
+    change_request_number: "{{ ansible_eda.event.change_request_number }}"
+    change_request_sys_id: "{{ ansible_eda.event.change_request_sys_id }}"
+    change_request_state: "{{ ansible_eda.event.change_request_state }}"
+    planned_start_date: "{{ ansible_eda.event.planned_start_date }}"
+    planned_end_date: "{{ ansible_eda.event.planned_end_date }}"
+    assignment_group: "{{ ansible_eda.event.assignment_group }}"
+    assigned_to: "{{ ansible_eda.event.assigned_to }}"
+    short_description: "{{ ansible_eda.event.short_description }}"
+    priority: "{{ ansible_eda.event.priority }}"
+    urgency: "{{ ansible_eda.event.urgency }}"
+    impact: "{{ ansible_eda.event.impact }}"
+
+  tasks:
+    - name: Debug received change request notification data
+      debug:
+        msg: |
+          Received ServiceNow change request notification data:
+          - Change Request Number: {{ change_request_number }}
+          - Change Request Sys ID: {{ change_request_sys_id }}
+          - State: {{ change_request_state }}
+          - Short Description: {{ short_description }}
+          - Planned Start Date: {{ planned_start_date }}
+          - Planned End Date: {{ planned_end_date }}
+          - Assignment Group: {{ assignment_group }}
+          - Assigned To: {{ assigned_to }}
+          - Priority: {{ priority }}
+          - Urgency: {{ urgency }}
+          - Impact: {{ impact }}
+
+    - name: Get change request details from ServiceNow
+      servicenow.itsm.change_request_info:
+        sys_id: "{{ change_request_sys_id }}"
+      register: change_request_details
+
+    - name: Update change request with notification
+      servicenow.itsm.change_request:
+        sys_id: "{{ change_request_sys_id }}"
+        work_notes: |
+          Change request has been scheduled and is ready for implementation.
+          
+          Schedule Details:
+          - Planned Start: {{ planned_start_date }}
+          - Planned End: {{ planned_end_date }}
+          - Priority: {{ priority }}
+          - Urgency: {{ urgency }}
+          - Impact: {{ impact }}
+          
+          Assignment Details:
+          - Assignment Group: {{ assignment_group }}
+          - Assigned To: {{ assigned_to }}
+          
+          This change request is now scheduled and ready for implementation work to begin.
+          
+          Notification sent by Event-Driven Ansible at {{ ansible_date_time.iso8601 }}.
+      register: change_request_notification_result
+
+    - name: Debug notification result
+      debug:
+        msg: |
+          Change Request Notification Updated:
+          - Change Request Number: {{ change_request_notification_result.record.number }}
+          - Work Notes Updated: Yes
+          - Notification Time: {{ ansible_date_time.iso8601 }}
+
+    - name: Set fact for notification processing
+      set_fact:
+        change_request_notified: true
+        change_request_number: "{{ change_request_number }}"
+        change_request_sys_id: "{{ change_request_sys_id }}"
+        notification_time: "{{ ansible_date_time.iso8601 }}"
+
+    - name: Display notification success message
+      debug:
+        msg: |
+          Change Request Notification Sent Successfully!
+
+          Change Request Details:
+          - Number: {{ change_request_number }}
+          - Sys ID: {{ change_request_sys_id }}
+          - State: {{ change_request_state }}
+          - Short Description: {{ short_description }}
+          - Planned Start: {{ planned_start_date }}
+          - Planned End: {{ planned_end_date }}
+          - Assignment Group: {{ assignment_group }}
+          - Assigned To: {{ assigned_to }}
+
+          Stakeholders have been notified that this change request is scheduled and ready for implementation.
