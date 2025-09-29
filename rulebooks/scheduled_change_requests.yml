@@ -5,7 +5,7 @@
     - name: Monitor ServiceNow change requests for scheduled status
       servicenow.itsm.records:
         table: change_request
-        interval: 30
+        interval: 10
         fields:
           - sys_id
           - number
