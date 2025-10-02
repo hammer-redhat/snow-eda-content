@@ -139,11 +139,7 @@
           - Files removed from /var/tmp: {{ var_tmp_files_to_delete.files | length }}
           - Log files removed: {{ old_log_files.files | length }}
           - Cache files removed: {{ var_cache_files.files | length }}
-          - Browser cache directories removed: {{ browser_cache_dirs.files | length }}
           - Estimated space freed: {{ space_freed }}GB
-          {% if docker_cleanup_result is defined %}
-          - Docker cleanup: {{ docker_cleanup_result.stdout }}
-          {% endif %}
           {% if kernel_cleanup_result is defined %}
           - Kernel cleanup: {{ kernel_cleanup_result.stdout }}
           {% endif %}
