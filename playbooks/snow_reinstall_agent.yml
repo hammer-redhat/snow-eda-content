@@ -1,5 +1,5 @@
 ---
-- name: SNOW: Reinstall Agent - Nagios Agent for RHEL 8
+- name: "SNOW: Reinstall Agent - Nagios Agent for RHEL 8"
   hosts: "{{ hostname | default('all') }}"
   gather_facts: true
   become: true

@@ -1,5 +1,5 @@
 ---
-- name: SNOW: Fix Disk Space - Cleanup Operations
+- name: "SNOW: Fix Disk Space - Cleanup Operations"
   hosts: "{{ hostname | default('all') }}"
   gather_facts: true
   become: true
