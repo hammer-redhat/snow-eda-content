@@ -1,99 +1,116 @@
 ---
-- name: "SNOW: Reinstall Agent - Nagios Agent for RHEL 8"
+- name: "SNOW: Reinstall Agent - Nagios NCPA Agent for RHEL 8/9"
   hosts: "{{ hostname | default('all') }}"
   gather_facts: true
   become: true
 
   vars:
-    nagios_agent_package: "nrpe"
-    nagios_config_dir: "/etc/nagios"
-    nagios_service_name: "nrpe"
-    nagios_user: "nagios"
-    nagios_group: "nagios"
+    nagios_repo_url: "https://repo.nagios.com/nagios/9/nagios-repo-9-2.el9.noarch.rpm"
+    ncpa_package: "ncpa"
+    ncpa_service_name: "ncpa"
+    ncpa_config_file: "/usr/local/ncpa/etc/ncpa.cfg"
+    ncpa_port: 5693
+    ncpa_api_token: "{{ nagios_api_token | default('K9pL3mX7vR2tQ8nJ') }}"
 
   tasks:
-    - name: Check if Nagios agent is already installed and running
+    - name: Check if NCPA is already installed and running
       systemd:
-        name: "{{ nagios_service_name }}"
-      register: nagios_service_status
+        name: "{{ ncpa_service_name }}"
+      register: ncpa_service_status
       failed_when: false
 
-    - name: Install EPEL repository for RHEL 8
-      yum:
-        name: epel-release
+    - name: Check if NCPA package is installed
+      rpm:
+        name: "{{ ncpa_package }}"
+      register: ncpa_package_status
+      failed_when: false
+
+    - name: Install Nagios repository for RHEL 8/9
+      rpm:
         state: present
-      when: ansible_distribution == "RedHat" and ansible_distribution_major_version == "8"
+        name: "{{ nagios_repo_url }}"
+      when: ncpa_package_status.rc != 0
 
-    - name: Install Nagios NRPE agent
-      yum:
-        name: "{{ nagios_agent_package }}"
+    - name: Update package cache
+      dnf:
+        update_cache: true
+      when: ncpa_package_status.rc != 0
+
+    - name: Clean package cache
+      dnf:
+        clean: all
+      when: ncpa_package_status.rc != 0
+
+    - name: Install NCPA agent
+      dnf:
+        name: "{{ ncpa_package }}"
         state: present
-      register: nagios_install_result
+      register: ncpa_install_result
+      when: ncpa_package_status.rc != 0
 
-    - name: Create Nagios configuration directory
-      file:
-        path: "{{ nagios_config_dir }}"
-        state: directory
-        owner: "{{ nagios_user }}"
-        group: "{{ nagios_group }}"
-        mode: '0755'
+    - name: Verify NCPA installation
+      rpm:
+        name: "{{ ncpa_package }}"
+      register: ncpa_verify_result
 
-    - name: Configure NRPE daemon
-      template:
-        src: nrpe.cfg.j2
-        dest: "{{ nagios_config_dir }}/nrpe.cfg"
-        owner: "{{ nagios_user }}"
-        group: "{{ nagios_group }}"
-        mode: '0644'
+    - name: Configure NCPA API token
+      lineinfile:
+        path: "{{ ncpa_config_file }}"
+        regexp: '^community_string = '
+        line: 'community_string = {{ ncpa_api_token }}'
         backup: true
-      notify: restart nrpe
+      notify: restart ncpa
 
-    - name: Create NRPE commands directory
-      file:
-        path: "{{ nagios_config_dir }}/nrpe.d"
-        state: directory
-        owner: "{{ nagios_user }}"
-        group: "{{ nagios_group }}"
-        mode: '0755'
-
-    - name: Configure NRPE commands
-      template:
-        src: commands.cfg.j2
-        dest: "{{ nagios_config_dir }}/nrpe.d/commands.cfg"
-        owner: "{{ nagios_user }}"
-        group: "{{ nagios_group }}"
-        mode: '0644'
-        backup: true
-      notify: restart nrpe
-
-    - name: Start and enable NRPE service
+    - name: Start and enable NCPA service
       systemd:
-        name: "{{ nagios_service_name }}"
+        name: "{{ ncpa_service_name }}"
         state: started
         enabled: true
         daemon_reload: true
 
-    - name: Verify NRPE service is running
+    - name: Check if firewalld is active
       systemd:
-        name: "{{ nagios_service_name }}"
-      register: nrpe_final_status
+        name: firewalld
+      register: firewalld_status
+      failed_when: false
 
-    - name: Test NRPE connection locally
-      command: /usr/lib64/nagios/plugins/check_nrpe -H localhost -c check_load
-      register: nrpe_test_result
+    - name: Configure firewall for NCPA port
+      firewalld:
+        port: "{{ ncpa_port }}/tcp"
+        permanent: true
+        state: enabled
+        immediate: true
+      when: firewalld_status.status.ActiveState == "active"
+
+    - name: Verify NCPA service is running
+      systemd:
+        name: "{{ ncpa_service_name }}"
+      register: ncpa_final_status
+
+    - name: Test NCPA web interface accessibility
+      uri:
+        url: "https://{{ ansible_default_ipv4.address }}:{{ ncpa_port }}/"
+        method: GET
+        validate_certs: false
+        timeout: 10
+      register: ncpa_web_test
       failed_when: false
 
     - name: Display installation status
       debug:
         msg: |
-          Nagios NRPE agent installation completed:
-          - Service status: {{ nrpe_final_status.status.ActiveState }}
-          - Service enabled: {{ nrpe_final_status.status.UnitFileState }}
-          - Local test result: {{ nrpe_test_result.stdout if nrpe_test_result.rc == 0 else 'Failed' }}
+          Nagios NCPA agent installation completed:
+          - Package installed: {{ ncpa_verify_result.rc == 0 }}
+          - Service status: {{ ncpa_final_status.status.ActiveState }}
+          - Service enabled: {{ ncpa_final_status.status.UnitFileState }}
+          - Web interface accessible: {{ ncpa_web_test.status == 200 if ncpa_web_test.status is defined else 'Unknown' }}
+          - Configuration file: {{ ncpa_config_file }}
+          - API Token: {{ ncpa_api_token }}
+          - Access URL: https://{{ ansible_default_ipv4.address }}:{{ ncpa_port }}/
 
   handlers:
-    - name: restart nrpe
+    - name: restart ncpa
       systemd:
-        name: "{{ nagios_service_name }}"
+        name: "{{ ncpa_service_name }}"
         state: restarted
         daemon_reload: true
