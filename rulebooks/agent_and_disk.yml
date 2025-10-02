@@ -1,0 +1,44 @@
+---
+- name: ServiceNow Incident Monitor for Agent and Disk Space Issues
+  sources:
+    - name: Monitor ServiceNow incidents for agent and disk space issues
+      servicenow.itsm.records:
+        table: incident
+        interval: 10
+        fields:
+          - sys_id
+          - number
+          - short_description
+          - u_hostname
+          - u_change_request
+          - sys_class_name
+    - name: Monitor linked change requests
+      servicenow.itsm.records:
+        table: change_request
+        interval: 10
+        fields:
+          - sys_id
+          - state
+          - sys_class_name
+  rules:
+    - name: Reinstall agent for agent failure incidents
+      condition: event.sys_class_name == "incident" and event.short_description == "test agent failure"
+      action:
+        run_job_template:
+          name: "Reinstall Agent"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              hostname: "{{ event.u_hostname }}"
+    
+    - name: Fix disk space for disk space full incidents
+      condition: event.sys_class_name == "incident" and event.short_description == "test disk space full"
+      action:
+        run_job_template:
+          name: "Fix Disk Space"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              hostname: "{{ event.u_hostname }}"
