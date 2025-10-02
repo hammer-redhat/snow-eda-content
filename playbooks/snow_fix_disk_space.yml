@@ -60,8 +60,7 @@
       when: ansible_pkg_mgr == "yum"
 
     - name: Clean package cache (dnf)
-      dnf:
-        clean: all
+      shell: dnf clean all
       when: ansible_pkg_mgr == "dnf"
 
     - name: Clean APT cache
