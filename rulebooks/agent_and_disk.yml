@@ -25,7 +25,7 @@
       condition: event.sys_class_name == "incident" and event.short_description == "test agent failure"
       action:
         run_job_template:
-          name: "Reinstall Agent"
+          name: "SNOW: Reinstall Agent"
           organization: SNOW
           post_events: true
           job_args:
@@ -36,7 +36,7 @@
       condition: event.sys_class_name == "incident" and event.short_description == "test disk space full"
       action:
         run_job_template:
-          name: "Fix Disk Space"
+          name: "SNOW: Fix Disk Space"
           organization: SNOW
           post_events: true
           job_args:

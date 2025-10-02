@@ -1,0 +1,99 @@
+---
+- name: SNOW: Reinstall Agent - Nagios Agent for RHEL 8
+  hosts: "{{ hostname | default('all') }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    nagios_agent_package: "nrpe"
+    nagios_config_dir: "/etc/nagios"
+    nagios_service_name: "nrpe"
+    nagios_user: "nagios"
+    nagios_group: "nagios"
+
+  tasks:
+    - name: Check if Nagios agent is already installed and running
+      systemd:
+        name: "{{ nagios_service_name }}"
+      register: nagios_service_status
+      failed_when: false
+
+    - name: Install EPEL repository for RHEL 8
+      yum:
+        name: epel-release
+        state: present
+      when: ansible_distribution == "RedHat" and ansible_distribution_major_version == "8"
+
+    - name: Install Nagios NRPE agent
+      yum:
+        name: "{{ nagios_agent_package }}"
+        state: present
+      register: nagios_install_result
+
+    - name: Create Nagios configuration directory
+      file:
+        path: "{{ nagios_config_dir }}"
+        state: directory
+        owner: "{{ nagios_user }}"
+        group: "{{ nagios_group }}"
+        mode: '0755'
+
+    - name: Configure NRPE daemon
+      template:
+        src: nrpe.cfg.j2
+        dest: "{{ nagios_config_dir }}/nrpe.cfg"
+        owner: "{{ nagios_user }}"
+        group: "{{ nagios_group }}"
+        mode: '0644'
+        backup: true
+      notify: restart nrpe
+
+    - name: Create NRPE commands directory
+      file:
+        path: "{{ nagios_config_dir }}/nrpe.d"
+        state: directory
+        owner: "{{ nagios_user }}"
+        group: "{{ nagios_group }}"
+        mode: '0755'
+
+    - name: Configure NRPE commands
+      template:
+        src: commands.cfg.j2
+        dest: "{{ nagios_config_dir }}/nrpe.d/commands.cfg"
+        owner: "{{ nagios_user }}"
+        group: "{{ nagios_group }}"
+        mode: '0644'
+        backup: true
+      notify: restart nrpe
+
+    - name: Start and enable NRPE service
+      systemd:
+        name: "{{ nagios_service_name }}"
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Verify NRPE service is running
+      systemd:
+        name: "{{ nagios_service_name }}"
+      register: nrpe_final_status
+
+    - name: Test NRPE connection locally
+      command: /usr/lib64/nagios/plugins/check_nrpe -H localhost -c check_load
+      register: nrpe_test_result
+      failed_when: false
+
+    - name: Display installation status
+      debug:
+        msg: |
+          Nagios NRPE agent installation completed:
+          - Service status: {{ nrpe_final_status.status.ActiveState }}
+          - Service enabled: {{ nrpe_final_status.status.UnitFileState }}
+          - Local test result: {{ nrpe_test_result.stdout if nrpe_test_result.rc == 0 else 'Failed' }}
+
+  handlers:
+    - name: restart nrpe
+      systemd:
+        name: "{{ nagios_service_name }}"
+        state: restarted
+        daemon_reload: true

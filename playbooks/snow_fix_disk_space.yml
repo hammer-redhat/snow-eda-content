@@ -1,0 +1,185 @@
+---
+- name: SNOW: Fix Disk Space - Cleanup Operations
+  hosts: "{{ hostname | default('all') }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    cleanup_directories:
+      - /tmp
+      - /var/tmp
+      - /var/log
+      - /var/cache
+    min_disk_space_gb: 2
+    log_retention_days: 30
+    cache_retention_days: 7
+
+  tasks:
+    - name: Check current disk usage
+      command: df -h /
+      register: disk_usage_before
+      changed_when: false
+
+    - name: Display current disk usage
+      debug:
+        msg: "Current disk usage: {{ disk_usage_before.stdout_lines[1] }}"
+
+    - name: Clean /tmp directory (files older than 7 days)
+      find:
+        paths: /tmp
+        age: "{{ cache_retention_days }}d"
+        file_type: file
+        recurse: yes
+      register: tmp_files_to_delete
+
+    - name: Remove old files from /tmp
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ tmp_files_to_delete.files }}"
+      when: tmp_files_to_delete.files | length > 0
+
+    - name: Clean /var/tmp directory (files older than 7 days)
+      find:
+        paths: /var/tmp
+        age: "{{ cache_retention_days }}d"
+        file_type: file
+        recurse: yes
+      register: var_tmp_files_to_delete
+
+    - name: Remove old files from /var/tmp
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ var_tmp_files_to_delete.files }}"
+      when: var_tmp_files_to_delete.files | length > 0
+
+    - name: Clean package cache
+      yum:
+        clean: all
+      when: ansible_pkg_mgr == "yum"
+
+    - name: Clean package cache (dnf)
+      dnf:
+        clean: all
+      when: ansible_pkg_mgr == "dnf"
+
+    - name: Clean APT cache
+      apt:
+        autoclean: yes
+        autoremove: yes
+      when: ansible_pkg_mgr == "apt"
+
+    - name: Clean old log files
+      find:
+        paths: /var/log
+        age: "{{ log_retention_days }}d"
+        file_type: file
+        patterns: "*.log*"
+        recurse: yes
+      register: old_log_files
+
+    - name: Remove old log files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ old_log_files.files }}"
+      when: old_log_files.files | length > 0
+
+    - name: Clean journal logs older than specified days
+      systemd:
+        name: systemd-journald
+        state: restarted
+      notify: clean journal logs
+
+    - name: Clean Docker system (if Docker is installed)
+      command: docker system prune -f
+      register: docker_cleanup_result
+      failed_when: false
+      when: "'docker' in ansible_facts.packages"
+
+    - name: Clean Docker volumes (if Docker is installed)
+      command: docker volume prune -f
+      register: docker_volume_cleanup_result
+      failed_when: false
+      when: "'docker' in ansible_facts.packages"
+
+    - name: Clean unused kernels (RHEL/CentOS)
+      command: package-cleanup --oldkernels --count=2 -y
+      register: kernel_cleanup_result
+      failed_when: false
+      when: ansible_distribution in ['RedHat', 'CentOS']
+
+    - name: Clean unused kernels (Ubuntu/Debian)
+      command: apt autoremove -y
+      register: ubuntu_kernel_cleanup_result
+      failed_when: false
+      when: ansible_distribution in ['Ubuntu', 'Debian']
+
+    - name: Clean browser cache directories
+      find:
+        paths: 
+          - /home/*/.cache
+          - /root/.cache
+        age: "{{ cache_retention_days }}d"
+        file_type: directory
+        recurse: yes
+      register: browser_cache_dirs
+
+    - name: Remove old browser cache directories
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ browser_cache_dirs.files }}"
+      when: browser_cache_dirs.files | length > 0
+
+    - name: Clean /var/cache directory
+      find:
+        paths: /var/cache
+        age: "{{ cache_retention_days }}d"
+        file_type: file
+        recurse: yes
+      register: var_cache_files
+
+    - name: Remove old cache files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ var_cache_files.files }}"
+      when: var_cache_files.files | length > 0
+
+    - name: Check disk usage after cleanup
+      command: df -h /
+      register: disk_usage_after
+      changed_when: false
+
+    - name: Display disk usage after cleanup
+      debug:
+        msg: "Disk usage after cleanup: {{ disk_usage_after.stdout_lines[1] }}"
+
+    - name: Calculate space freed
+      set_fact:
+        space_freed: "{{ (disk_usage_before.stdout_lines[1].split()[3] | regex_replace('G', '') | int) - (disk_usage_after.stdout_lines[1].split()[3] | regex_replace('G', '') | int) }}"
+
+    - name: Display cleanup summary
+      debug:
+        msg: |
+          Disk cleanup completed:
+          - Files removed from /tmp: {{ tmp_files_to_delete.files | length }}
+          - Files removed from /var/tmp: {{ var_tmp_files_to_delete.files | length }}
+          - Log files removed: {{ old_log_files.files | length }}
+          - Cache files removed: {{ var_cache_files.files | length }}
+          - Browser cache directories removed: {{ browser_cache_dirs.files | length }}
+          - Estimated space freed: {{ space_freed }}GB
+          {% if docker_cleanup_result is defined %}
+          - Docker cleanup: {{ docker_cleanup_result.stdout }}
+          {% endif %}
+          {% if kernel_cleanup_result is defined %}
+          - Kernel cleanup: {{ kernel_cleanup_result.stdout }}
+          {% endif %}
+
+  handlers:
+    - name: clean journal logs
+      command: journalctl --vacuum-time={{ log_retention_days }}d
+      register: journal_cleanup_result
+      failed_when: false
