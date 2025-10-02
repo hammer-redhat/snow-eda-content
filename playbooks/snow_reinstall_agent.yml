@@ -43,8 +43,7 @@
       when: not ncpa_installed
 
     - name: Clean package cache
-      dnf:
-        clean: all
+      shell: dnf clean all
       when: not ncpa_installed
 
     - name: Install NCPA agent
