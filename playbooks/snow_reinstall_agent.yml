@@ -19,38 +19,44 @@
       register: ncpa_service_status
       failed_when: false
 
+    - name: Gather package facts
+      package_facts:
+        manager: auto
+
     - name: Check if NCPA package is installed
-      rpm:
-        name: "{{ ncpa_package }}"
-      register: ncpa_package_status
-      failed_when: false
+      set_fact:
+        ncpa_installed: "{{ ncpa_package in ansible_facts.packages }}"
 
     - name: Install Nagios repository for RHEL 8/9
-      rpm:
-        state: present
-        name: "{{ nagios_repo_url }}"
-      when: ncpa_package_status.rc != 0
+      get_url:
+        url: "{{ nagios_repo_url }}"
+        dest: "/tmp/nagios-repo.rpm"
+      when: not ncpa_installed
+
+    - name: Install Nagios repository RPM
+      shell: rpm -Uvh /tmp/nagios-repo.rpm
+      when: not ncpa_installed
 
     - name: Update package cache
       dnf:
         update_cache: true
-      when: ncpa_package_status.rc != 0
+      when: not ncpa_installed
 
     - name: Clean package cache
       dnf:
         clean: all
-      when: ncpa_package_status.rc != 0
+      when: not ncpa_installed
 
     - name: Install NCPA agent
       dnf:
         name: "{{ ncpa_package }}"
         state: present
       register: ncpa_install_result
-      when: ncpa_package_status.rc != 0
+      when: not ncpa_installed
 
     - name: Verify NCPA installation
-      rpm:
-        name: "{{ ncpa_package }}"
+      package_facts:
+        manager: auto
       register: ncpa_verify_result
 
     - name: Configure NCPA API token
@@ -100,7 +106,7 @@
       debug:
         msg: |
           Nagios NCPA agent installation completed:
-          - Package installed: {{ ncpa_verify_result.rc == 0 }}
+          - Package installed: {{ ncpa_package in ansible_facts.packages }}
           - Service status: {{ ncpa_final_status.status.ActiveState }}
           - Service enabled: {{ ncpa_final_status.status.UnitFileState }}
           - Web interface accessible: {{ ncpa_web_test.status == 200 if ncpa_web_test.status is defined else 'Unknown' }}
