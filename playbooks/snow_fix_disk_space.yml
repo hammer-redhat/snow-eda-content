@@ -91,18 +91,6 @@
         state: restarted
       notify: clean journal logs
 
-    - name: Clean Docker system (if Docker is installed)
-      command: docker system prune -f
-      register: docker_cleanup_result
-      failed_when: false
-      when: "'docker' in ansible_facts.packages"
-
-    - name: Clean Docker volumes (if Docker is installed)
-      command: docker volume prune -f
-      register: docker_volume_cleanup_result
-      failed_when: false
-      when: "'docker' in ansible_facts.packages"
-
     - name: Clean unused kernels (RHEL/CentOS)
       command: package-cleanup --oldkernels --count=2 -y
       register: kernel_cleanup_result
@@ -114,23 +102,6 @@
       register: ubuntu_kernel_cleanup_result
       failed_when: false
       when: ansible_distribution in ['Ubuntu', 'Debian']
-
-    - name: Clean browser cache directories
-      find:
-        paths: 
-          - /home/*/.cache
-          - /root/.cache
-        age: "{{ cache_retention_days }}d"
-        file_type: directory
-        recurse: yes
-      register: browser_cache_dirs
-
-    - name: Remove old browser cache directories
-      file:
-        path: "{{ item.path }}"
-        state: absent
-      loop: "{{ browser_cache_dirs.files }}"
-      when: browser_cache_dirs.files | length > 0
 
     - name: Clean /var/cache directory
       find:
