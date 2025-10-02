@@ -1,4 +1,5 @@
 ---
-collections:
-  - name: servicenow.itsm
-  - name: ansible.eda
+# Temporarily disabled due to Galaxy server issues
+# collections:
+#   - name: servicenow.itsm
+#   - name: ansible.eda
