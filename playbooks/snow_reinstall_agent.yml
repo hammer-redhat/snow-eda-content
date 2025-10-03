@@ -14,65 +14,64 @@
 
   tasks:
     - name: Check if NCPA is already installed and running
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ ncpa_service_name }}"
       register: ncpa_service_status
       failed_when: false
 
     - name: Gather package facts
-      package_facts:
+      ansible.builtin.package_facts:
         manager: auto
 
     - name: Check if NCPA package is installed
-      set_fact:
+      ansible.builtin.set_fact:
         ncpa_installed: "{{ ncpa_package in ansible_facts.packages }}"
 
     - name: Check if Nagios repository is already installed
-      rpm:
-        list: nagios-repo
+      ansible.builtin.shell: rpm -q nagios-repo
       register: nagios_repo_status
       failed_when: false
+      changed_when: false
 
     - name: Set fact for Nagios repository installation status
-      set_fact:
-        nagios_repo_installed: "{{ nagios_repo_status.results | length > 0 }}"
+      ansible.builtin.set_fact:
+        nagios_repo_installed: "{{ nagios_repo_status.rc == 0 }}"
 
     - name: Install Nagios repository for RHEL 8/9
-      get_url:
+      ansible.builtin.get_url:
         url: "{{ nagios_repo_url }}"
         dest: "/tmp/nagios-repo.rpm"
       when: not ncpa_installed and not nagios_repo_installed
 
     - name: Install Nagios repository RPM
-      rpm:
-        state: present
-        path: "/tmp/nagios-repo.rpm"
+      ansible.builtin.shell: rpm -i /tmp/nagios-repo.rpm
       when: not ncpa_installed and not nagios_repo_installed
+      failed_when: false
 
     - name: Update package cache
-      dnf:
+      ansible.builtin.dnf:
         update_cache: true
       when: not ncpa_installed
 
     - name: Clean package cache
-      dnf:
+      ansible.builtin.dnf:
         clean: all
       when: not ncpa_installed
 
     - name: Install NCPA agent
-      dnf:
+      ansible.builtin.dnf:
         name: "{{ ncpa_package }}"
         state: present
       register: ncpa_install_result
       when: not ncpa_installed
 
     - name: Verify NCPA installation
-      package_facts:
+      ansible.builtin.package_facts:
         manager: auto
       register: ncpa_verify_result
 
     - name: Configure NCPA API token
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ ncpa_config_file }}"
         regexp: '^community_string = '
         line: 'community_string = {{ ncpa_api_token }}'
@@ -80,33 +79,32 @@
       notify: restart ncpa
 
     - name: Start and enable NCPA service
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ ncpa_service_name }}"
         state: started
         enabled: true
         daemon_reload: true
 
     - name: Check if firewalld is active
-      systemd:
+      ansible.builtin.systemd:
         name: firewalld
       register: firewalld_status
       failed_when: false
 
     - name: Configure firewall for NCPA port
-      firewalld:
-        port: "{{ ncpa_port }}/tcp"
-        permanent: true
-        state: enabled
-        immediate: true
+      ansible.builtin.shell: |
+        firewall-cmd --permanent --add-port={{ ncpa_port }}/tcp
+        firewall-cmd --reload
       when: firewalld_status.status.ActiveState == "active"
+      failed_when: false
 
     - name: Verify NCPA service is running
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ ncpa_service_name }}"
       register: ncpa_final_status
 
     - name: Test NCPA web interface accessibility
-      uri:
+      ansible.builtin.uri:
         url: "https://{{ ansible_default_ipv4.address }}:{{ ncpa_port }}/"
         method: GET
         validate_certs: false
@@ -115,7 +113,7 @@
       failed_when: false
 
     - name: Display installation status
-      debug:
+      ansible.builtin.debug:
         msg: |
           Nagios NCPA agent installation completed:
           - Package installed: {{ ncpa_package in ansible_facts.packages }}
@@ -128,7 +126,7 @@
 
   handlers:
     - name: restart ncpa
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ ncpa_service_name }}"
         state: restarted
         daemon_reload: true
