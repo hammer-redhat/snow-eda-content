@@ -27,15 +27,27 @@
       set_fact:
         ncpa_installed: "{{ ncpa_package in ansible_facts.packages }}"
 
+    - name: Check if Nagios repository is already installed
+      rpm:
+        list: nagios-repo
+      register: nagios_repo_status
+      failed_when: false
+
+    - name: Set fact for Nagios repository installation status
+      set_fact:
+        nagios_repo_installed: "{{ nagios_repo_status.results | length > 0 }}"
+
     - name: Install Nagios repository for RHEL 8/9
       get_url:
         url: "{{ nagios_repo_url }}"
         dest: "/tmp/nagios-repo.rpm"
-      when: not ncpa_installed
+      when: not ncpa_installed and not nagios_repo_installed
 
     - name: Install Nagios repository RPM
-      shell: rpm -Uvh /tmp/nagios-repo.rpm
-      when: not ncpa_installed
+      rpm:
+        state: present
+        path: "/tmp/nagios-repo.rpm"
+      when: not ncpa_installed and not nagios_repo_installed
 
     - name: Update package cache
       dnf:
@@ -43,7 +55,8 @@
       when: not ncpa_installed
 
     - name: Clean package cache
-      shell: dnf clean all
+      dnf:
+        clean: all
       when: not ncpa_installed
 
     - name: Install NCPA agent
