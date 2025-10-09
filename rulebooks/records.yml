@@ -13,9 +13,7 @@
         query:
           - field: state
             operator: IN
-            value:
-              - "-1"
-              - "implementation"
+            value: "-1,implementation"
 
   rules:
     - name: Enrich new incident received. 
