@@ -60,7 +60,7 @@
 
     - name: Create change request in ServiceNow
       servicenow.itsm.change_request:
-        state: new
+        state: implementation
         short_description: "{{ change_reason }} - Related to Incident {{ incident_number }}"
         description: |
           This change request was automatically created based on ServiceNow incident {{ incident_number }}.
