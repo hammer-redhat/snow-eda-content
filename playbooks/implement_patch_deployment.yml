@@ -34,10 +34,11 @@
       servicenow.itsm.change_request:
         sys_id: "{{ change_request_sys_id }}"
         state: implementation
-        work_notes: |
-          EDA is executing the patch deployment for this change request.
-          Short Description: {{ short_description }}
-          Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
+        other:
+          work_notes: |
+            EDA is executing the patch deployment for this change request.
+            Short Description: {{ short_description }}
+            Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
       register: change_request_update
 
     - name: Trigger downstream automation (placeholder)
@@ -47,8 +48,9 @@
     - name: Mark implementation progress in ServiceNow
       servicenow.itsm.change_request:
         sys_id: "{{ change_request_sys_id }}"
-        work_notes: |
-          EDA completed patch deployment automation.
+        other:
+          work_notes: |
+            EDA completed patch deployment automation.
       register: change_request_update_complete
 
     - name: Show final result

@@ -36,11 +36,12 @@
       servicenow.itsm.change_request:
         sys_id: "{{ change_request_sys_id }}"
         state: implementation
-        work_notes: |
-          EDA default handler acknowledged implement-phase change request.
-          Short Description: {{ short_description }}
-          Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
-          Assignment: {{ assignment_group }} / {{ assigned_to }}
+        other:
+          work_notes: |
+            EDA default handler acknowledged implement-phase change request.
+            Short Description: {{ short_description }}
+            Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
+            Assignment: {{ assignment_group }} / {{ assigned_to }}
       register: default_update
 
     - name: Show update result
