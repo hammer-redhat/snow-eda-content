@@ -1,0 +1,49 @@
+---
+- name: Default Implement-Phase Change Request Processor
+  hosts: localhost
+  gather_facts: false
+  vars:
+    change_request_number: "{{ ansible_eda.event.change_request_number | default(ansible_eda.event.number) }}"
+    change_request_sys_id: "{{ ansible_eda.event.change_request_sys_id | default(ansible_eda.event.sys_id) }}"
+    change_request_state: "{{ ansible_eda.event.change_request_state | default(ansible_eda.event.state) }}"
+    short_description: "{{ ansible_eda.event.short_description }}"
+    description: "{{ ansible_eda.event.description | default('') }}"
+    priority: "{{ ansible_eda.event.priority | default('') }}"
+    urgency: "{{ ansible_eda.event.urgency | default('') }}"
+    impact: "{{ ansible_eda.event.impact | default('') }}"
+    assignment_group: "{{ ansible_eda.event.assignment_group | default('') }}"
+    assigned_to: "{{ ansible_eda.event.assigned_to | default('') }}"
+    start_date: "{{ ansible_eda.event.start_date | default('') }}"
+    planned_end_date: "{{ ansible_eda.event.planned_end_date | default('') }}"
+    change_type: "{{ ansible_eda.event.change_type | default(ansible_eda.event.type | default('')) }}"
+    risk_level: "{{ ansible_eda.event.risk_level | default(ansible_eda.event.risk | default('')) }}"
+
+  tasks:
+    - name: Log change request context
+      ansible.builtin.debug:
+        msg: |
+          Implement-phase change request received (default handler):
+          - Number: {{ change_request_number }}
+          - Sys ID: {{ change_request_sys_id }}
+          - State: {{ change_request_state }}
+          - Short Description: {{ short_description }}
+          - Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
+          - Assignment: {{ assignment_group }} / {{ assigned_to }}
+          - Start/Planned End: {{ start_date }} / {{ planned_end_date }}
+          - Type/Risk: {{ change_type }} / {{ risk_level }}
+
+    - name: Ensure change request remains in implementation with work note
+      servicenow.itsm.change_request:
+        sys_id: "{{ change_request_sys_id }}"
+        state: implementation
+        work_notes: |
+          EDA default handler acknowledged implement-phase change request.
+          Short Description: {{ short_description }}
+          Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
+          Assignment: {{ assignment_group }} / {{ assigned_to }}
+      register: default_update
+
+    - name: Show update result
+      ansible.builtin.debug:
+        var: default_update.record
+

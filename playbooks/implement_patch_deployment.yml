@@ -1,0 +1,57 @@
+---
+- name: Implement Patch Deployment from ServiceNow Change Request
+  hosts: localhost
+  gather_facts: false
+  vars:
+    change_request_number: "{{ ansible_eda.event.change_request_number | default(ansible_eda.event.number) }}"
+    change_request_sys_id: "{{ ansible_eda.event.change_request_sys_id | default(ansible_eda.event.sys_id) }}"
+    change_request_state: "{{ ansible_eda.event.change_request_state | default(ansible_eda.event.state) }}"
+    short_description: "{{ ansible_eda.event.short_description }}"
+    description: "{{ ansible_eda.event.description | default('') }}"
+    priority: "{{ ansible_eda.event.priority | default('') }}"
+    urgency: "{{ ansible_eda.event.urgency | default('') }}"
+    impact: "{{ ansible_eda.event.impact | default('') }}"
+    assignment_group: "{{ ansible_eda.event.assignment_group | default('') }}"
+    assigned_to: "{{ ansible_eda.event.assigned_to | default('') }}"
+    start_date: "{{ ansible_eda.event.start_date | default('') }}"
+    planned_end_date: "{{ ansible_eda.event.planned_end_date | default('') }}"
+    change_type: "{{ ansible_eda.event.change_type | default(ansible_eda.event.type | default('')) }}"
+    risk_level: "{{ ansible_eda.event.risk_level | default(ansible_eda.event.risk | default('')) }}"
+
+  tasks:
+    - name: Log patch deployment context
+      ansible.builtin.debug:
+        msg: |
+          Implement-phase change request received (patch deployment):
+          - Number: {{ change_request_number }}
+          - Sys ID: {{ change_request_sys_id }}
+          - Short Description: {{ short_description }}
+          - Description: {{ description }}
+          - Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
+          - Assignment: {{ assignment_group }} / {{ assigned_to }}
+
+    - name: Ensure change request stays in implementation and add work note
+      servicenow.itsm.change_request:
+        sys_id: "{{ change_request_sys_id }}"
+        state: implementation
+        work_notes: |
+          EDA is executing the patch deployment for this change request.
+          Short Description: {{ short_description }}
+          Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
+      register: change_request_update
+
+    - name: Trigger downstream automation (placeholder)
+      ansible.builtin.debug:
+        msg: "Run your patching role or include_role here based on your environment."
+
+    - name: Mark implementation progress in ServiceNow
+      servicenow.itsm.change_request:
+        sys_id: "{{ change_request_sys_id }}"
+        work_notes: |
+          EDA completed patch deployment automation.
+      register: change_request_update_complete
+
+    - name: Show final result
+      ansible.builtin.debug:
+        var: change_request_update_complete.record
+

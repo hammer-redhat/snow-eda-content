@@ -1,0 +1,91 @@
+---
+- name: Monitor ServiceNow Change Requests in Implementation and Dispatch Jobs
+  hosts: all
+  sources:
+    - name: Monitor ServiceNow change requests in implementation
+      servicenow.itsm.records:
+        table: change_request
+        interval: 10
+        fields:
+          - sys_id
+          - number
+          - short_description
+          - description
+          - state
+          - priority
+          - urgency
+          - impact
+          - category
+          - subcategory
+          - assignment_group
+          - assigned_to
+          - sys_created_on
+          - sys_updated_on
+          - sys_mod_count
+          - sys_class_name
+          - start_date
+          - planned_end_date
+          - risk
+          - type
+          - reason
+          - justification
+          - implementation_plan
+          - rollback_plan
+          - test_plan
+          - communication_plan
+          - approval_set
+          - change_plan
+          - risk_assessment
+          - business_justification
+          - technical_justification
+  rules:
+    # Route patch-related change requests to a specific job template
+    - name: Dispatch patch-related change requests in implementation
+      condition: event.sys_class_name == "change_request" and event.state == "implementation" and ("patch" in event.short_description or "Patch" in event.short_description or "PATCH" in event.short_description or event.short_description == "test patch deployment")
+      action:
+        run_job_template:
+          name: "SNOW: Implement - Patch Deployment"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              change_request_sys_id: "{{ event.sys_id }}"
+              change_request_number: "{{ event.number }}"
+              change_request_state: "{{ event.state }}"
+              short_description: "{{ event.short_description }}"
+              description: "{{ event.description }}"
+              start_date: "{{ event.start_date }}"
+              planned_end_date: "{{ event.planned_end_date }}"
+              assignment_group: "{{ event.assignment_group }}"
+              assigned_to: "{{ event.assigned_to }}"
+              priority: "{{ event.priority }}"
+              urgency: "{{ event.urgency }}"
+              impact: "{{ event.impact }}"
+              change_type: "{{ event.type }}"
+              risk_level: "{{ event.risk }}"
+
+    # Default handler for any other change requests in implementation
+    - name: Dispatch default handler for change requests in implementation
+      condition: event.sys_class_name == "change_request" and event.state == "implementation"
+      action:
+        run_job_template:
+          name: "SNOW: Implement - Default"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              change_request_sys_id: "{{ event.sys_id }}"
+              change_request_number: "{{ event.number }}"
+              change_request_state: "{{ event.state }}"
+              short_description: "{{ event.short_description }}"
+              description: "{{ event.description }}"
+              start_date: "{{ event.start_date }}"
+              planned_end_date: "{{ event.planned_end_date }}"
+              assignment_group: "{{ event.assignment_group }}"
+              assigned_to: "{{ event.assigned_to }}"
+              priority: "{{ event.priority }}"
+              urgency: "{{ event.urgency }}"
+              impact: "{{ event.impact }}"
+              change_type: "{{ event.type }}"
+              risk_level: "{{ event.risk }}"
+
