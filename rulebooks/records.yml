@@ -6,6 +6,10 @@
       servicenow.itsm.records:
         table: incident
         interval: 5
+    - name: Monitor ServiceNow change requests in implementation
+      servicenow.itsm.records:
+        table: change_request
+        interval: 10
 
   rules:
     - name: Enrich new incident received. 
