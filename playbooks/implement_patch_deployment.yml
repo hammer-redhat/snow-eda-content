@@ -39,6 +39,7 @@
             EDA is executing the patch deployment for this change request.
             Short Description: {{ short_description }}
             Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
+            EDA-IMPLEMENT-PROCESSED
       register: change_request_update
 
     - name: Trigger downstream automation (placeholder)
@@ -51,6 +52,7 @@
         other:
           work_notes: |
             EDA completed patch deployment automation.
+            EDA-IMPLEMENT-PROCESSED
       register: change_request_update_complete
 
     - name: Show final result

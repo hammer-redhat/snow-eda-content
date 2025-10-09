@@ -10,7 +10,7 @@
       servicenow.itsm.records:
         table: change_request
         interval: 10
-        sysparm_query: "state=-1"
+        sysparm_query: "state=-1^comments_and_work_notesNOT LIKEEDA-IMPLEMENT-PROCESSED"
 
   rules:
     - name: Enrich new incident received. 

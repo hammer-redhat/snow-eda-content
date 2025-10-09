@@ -42,6 +42,7 @@
             Short Description: {{ short_description }}
             Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
             Assignment: {{ assignment_group }} / {{ assigned_to }}
+            EDA-IMPLEMENT-PROCESSED
       register: default_update
 
     - name: Show update result
