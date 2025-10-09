@@ -6,38 +6,7 @@
       servicenow.itsm.records:
         table: change_request
         interval: 10
-        fields:
-          - sys_id
-          - number
-          - short_description
-          - description
-          - state
-          - priority
-          - urgency
-          - impact
-          - category
-          - subcategory
-          - assignment_group
-          - assigned_to
-          - sys_created_on
-          - sys_updated_on
-          - sys_mod_count
-          - sys_class_name
-          - start_date
-          - planned_end_date
-          - risk
-          - type
-          - reason
-          - justification
-          - implementation_plan
-          - rollback_plan
-          - test_plan
-          - communication_plan
-          - approval_set
-          - change_plan
-          - risk_assessment
-          - business_justification
-          - technical_justification
+
   rules:
     # Route patch-related change requests to a specific job template
     - name: Dispatch patch-related change requests in implementation
