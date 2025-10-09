@@ -11,8 +11,8 @@
         table: change_request
         interval: 10
         query:
-          - field: state
-            operator: IN
+          - column: state
+            condition: IN
             value: "-1,implementation"
 
   rules:
