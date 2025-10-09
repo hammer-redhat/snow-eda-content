@@ -10,7 +10,12 @@
       servicenow.itsm.records:
         table: change_request
         interval: 10
-        query: state=-1^ORstate=implementation
+        query:
+          - field: state
+            operator: IN
+            value:
+              - "-1"
+              - "implementation"
 
   rules:
     - name: Enrich new incident received. 
