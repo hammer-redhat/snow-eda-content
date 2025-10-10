@@ -1,6 +1,6 @@
 ---
 - name: Check firewalld status (non-failing)
-  ansible.builtin.command: systemctl is-active firewalld
+  ansible.builtin.command: systemctl status firewalld
   register: firewalld_status
   changed_when: false
   failed_when: firewalld_status.rc not in [0, 3]
