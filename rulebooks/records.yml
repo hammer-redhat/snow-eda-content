@@ -74,6 +74,7 @@
               impact: "{{ event.impact | default('') }}"
               change_type: "{{ event.type | default('') }}"
               risk_level: "{{ event.risk | default('') }}"
+
     - name: Enrich new incident received. 
       condition: event.sys_class_name == "incident" and event.sys_mod_count == "0"
       action:
