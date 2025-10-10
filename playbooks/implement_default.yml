@@ -79,7 +79,7 @@
       servicenow.itsm.change_request:
         sys_id: "{{ change_request_sys_id }}"
         state: closed
-        close_code: Successful
+        close_code: successful
         close_notes: "{{ closing_notes }}"
         other:
           work_notes: "{{ closing_notes }}"
@@ -89,9 +89,9 @@
       servicenow.itsm.incident:
         sys_id: "{{ incident_sys_id }}"
         state: closed
+        close_code: successful
+        close_notes: "{{ closing_notes }}"
         other:
-          close_code: Successful
-          close_notes: "{{ closing_notes }}"
           comments: "{{ closing_notes }}"
       when: incident_sys_id | length > 0
       register: incident_close_result_by_id
@@ -100,9 +100,9 @@
       servicenow.itsm.incident:
         number: "{{ incident_number }}"
         state: closed
+        close_code: successful
+        close_notes: "{{ closing_notes }}"
         other:
-          close_code: Successful
-          close_notes: "{{ closing_notes }}"
           comments: "{{ closing_notes }}"
       when: (incident_sys_id | length == 0) and (incident_number | length > 0)
       register: incident_close_result_by_number
