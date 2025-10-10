@@ -10,13 +10,45 @@
       servicenow.itsm.records:
         table: change_request
         interval: 10
-        sysparm_query: "state=-1^comments_and_work_notesNOT LIKEEDA-IMPLEMENT-PROCESSED"
+        sysparm_query: "state=-1"
+        fields:
+          - sys_id
+          - number
+          - state
+          - short_description
+          - description
+          - start_date
+          - planned_end_date
+          - assignment_group
+          - assigned_to
+          - priority
+          - urgency
+          - impact
+          - type
+          - risk
+          - comments_and_work_notes
 
     - name: Monitor new change requests to transition to implementation
       servicenow.itsm.records:
         table: change_request
         interval: 10
-        sysparm_query: "state=-5^short_descriptionLIKERelated to Incident^comments_and_work_notesNOT LIKEEDA-IMPLEMENT-PROCESSED"
+        sysparm_query: "state=-5^short_descriptionLIKERelated to Incident"
+        fields:
+          - sys_id
+          - number
+          - state
+          - short_description
+          - description
+          - start_date
+          - planned_end_date
+          - assignment_group
+          - assigned_to
+          - priority
+          - urgency
+          - impact
+          - type
+          - risk
+          - comments_and_work_notes
 
   rules:
     - name: Transition new change requests to implementation
@@ -67,7 +99,7 @@
               req_number: "{{ event.number }}"
 
     - name: Dispatch patch-related change requests in implementation
-      condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and ("patch" in event.short_description or "Patch" in event.short_description or "PATCH" in event.short_description or event.short_description == "test patch deployment")
+      condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and ("patch" in event.short_description or "Patch" in event.short_description or "PATCH" in event.short_description or event.short_description == "test patch deployment")
       action:
         run_job_template:
           name: "SNOW: Implement - Patch Deployment"
@@ -91,7 +123,7 @@
               risk_level: "{{ event.risk }}"
 
     - name: Dispatch default handler for change requests in implementation
-      condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1])
+      condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes)
       action:
         run_job_template:
           name: "SNOW: Implement - Default"
