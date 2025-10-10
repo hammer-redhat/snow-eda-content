@@ -32,20 +32,84 @@
           - Start/Planned End: {{ start_date }} / {{ planned_end_date }}
           - Type/Risk: {{ change_type }} / {{ risk_level }}
 
-    - name: Ensure change request remains in implementation with work note
+    - name: Get change request details
+      servicenow.itsm.change_request_info:
+        sys_id: "{{ change_request_sys_id }}"
+      register: cr_details
+
+    - name: Extract incident identifiers from change request description
+      ansible.builtin.set_fact:
+        parsed_inc_number: "{{ (cr_details.record.description | default('')) | regex_search('Incident Number:\\s*(INC[0-9]+)', '\\1') | default('') }}"
+        parsed_inc_sys_id: "{{ (cr_details.record.description | default('')) | regex_search('Incident Sys ID:\\s*([0-9a-f]{32})', '\\1') | default('') }}"
+
+    - name: Determine incident identifiers (fallback to short_description pattern)
+      ansible.builtin.set_fact:
+        incident_number: "{{ parsed_inc_number | default((short_description | default('')) | regex_search('(INC[0-9]+)', '\\1'), true) }}"
+        incident_sys_id: "{{ parsed_inc_sys_id | default('', true) }}"
+
+    - name: Check firewalld status via firewall-cmd
+      ansible.builtin.command: firewall-cmd --state
+      register: firewalld_cmd
+      changed_when: false
+      failed_when: false
+
+    - name: Fallback check firewalld status via systemctl
+      ansible.builtin.command: systemctl is-active firewalld
+      register: firewalld_systemctl
+      changed_when: false
+      failed_when: false
+      when: firewalld_cmd.rc != 0
+
+    - name: Set firewalld status fact
+      ansible.builtin.set_fact:
+        firewalld_status: >-
+          {{ (firewalld_cmd.stdout | default('') | trim) if firewalld_cmd.rc == 0 else (firewalld_systemctl.stdout | default('unknown') | trim) }}
+
+    - name: Build closing notes
+      ansible.builtin.set_fact:
+        closing_notes: |
+          EDA implementation completed. Closing change request.
+          Short Description: {{ short_description }}
+          Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
+          Assignment: {{ assignment_group }} / {{ assigned_to }}
+          Firewalld service status: {{ firewalld_status }}
+          EDA-IMPLEMENT-PROCESSED
+
+    - name: Close change request with notes
       servicenow.itsm.change_request:
         sys_id: "{{ change_request_sys_id }}"
-        state: implementation
+        state: closed
+        close_code: Successful
+        close_notes: "{{ closing_notes }}"
         other:
-          work_notes: |
-            EDA default handler acknowledged implement-phase change request.
-            Short Description: {{ short_description }}
-            Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
-            Assignment: {{ assignment_group }} / {{ assigned_to }}
-            EDA-IMPLEMENT-PROCESSED
-      register: default_update
+          work_notes: "{{ closing_notes }}"
+      register: cr_close_result
+
+    - name: Update related incident with closing notes (by sys_id if available)
+      servicenow.itsm.incident:
+        sys_id: "{{ incident_sys_id }}"
+        state: closed
+        other:
+          close_code: Successful
+          close_notes: "{{ closing_notes }}"
+          comments: "{{ closing_notes }}"
+      when: incident_sys_id | length > 0
+      register: incident_close_result_by_id
+
+    - name: Update related incident with closing notes (by number if sys_id missing)
+      servicenow.itsm.incident:
+        number: "{{ incident_number }}"
+        state: closed
+        other:
+          close_code: Successful
+          close_notes: "{{ closing_notes }}"
+          comments: "{{ closing_notes }}"
+      when: (incident_sys_id | length == 0) and (incident_number | length > 0)
+      register: incident_close_result_by_number
 
     - name: Show update result
       ansible.builtin.debug:
-        var: default_update.record
+        msg: |
+          Change Request {{ change_request_sys_id }} closed.
+          Incident updated: {{ (incident_close_result_by_id is defined) or (incident_close_result_by_number is defined) }}
 
