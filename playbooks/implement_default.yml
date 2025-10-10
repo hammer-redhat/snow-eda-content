@@ -47,6 +47,21 @@
         incident_number: "{{ parsed_inc_number | default((short_description | default('')) | regex_search('(INC[0-9]+)', '\\1'), true) }}"
         incident_sys_id: "{{ parsed_inc_sys_id | default('', true) }}"
 
+    - name: Normalize incident number to plain string
+      ansible.builtin.set_fact:
+        incident_number: "{{ (incident_number | string) | regex_search('INC[0-9]+') | default('', true) }}"
+
+    - name: Resolve incident sys_id from number when missing
+      servicenow.itsm.incident_info:
+        sysparm_query: "number={{ incident_number }}"
+      when: (incident_sys_id | length == 0) and (incident_number | length > 0)
+      register: incident_lookup
+
+    - name: Set incident sys_id from lookup when available
+      ansible.builtin.set_fact:
+        incident_sys_id: "{{ (incident_lookup.records[0].sys_id | default('')) if (incident_lookup is defined and (incident_lookup.records | default([])) | length > 0) else incident_sys_id }}"
+      when: incident_lookup is defined
+
     - name: Check firewalld status via firewall-cmd
       ansible.builtin.command: firewall-cmd --state
       register: firewalld_cmd
