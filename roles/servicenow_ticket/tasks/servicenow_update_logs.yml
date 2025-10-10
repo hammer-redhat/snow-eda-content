@@ -1,6 +1,6 @@
 ---
 - name: Get CPU Utilization  # noqa no-changed-when
-  ansible.builtin.shell: sudo systemctl status firewalld > /tmp/cpu.txt
+  ansible.builtin.shell: sudo systemctl status firewalld > /tmp/service.txt
 
 - name: Update an incident in ServiceNow
   servicenow.itsm.incident:
@@ -15,5 +15,5 @@
     other:
       comments: "This is automated enrichment of ServiceNow tickets with EDA."
     attachments:
-      - path: /tmp/cpu.txt
-        name: "CPU Utilization Results After"
+      - path: /tmp/service.txt
+        name: "Firewalld Status"
