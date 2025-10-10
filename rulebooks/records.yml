@@ -12,7 +12,36 @@
         interval: 10
         sysparm_query: "state=-1^comments_and_work_notesNOT LIKEEDA-IMPLEMENT-PROCESSED"
 
+    - name: Monitor new change requests to transition to implementation
+      servicenow.itsm.records:
+        table: change_request
+        interval: 10
+        sysparm_query: "state=-5^short_descriptionLIKERelated to Incident^comments_and_work_notesNOT LIKEEDA-IMPLEMENT-PROCESSED"
+
   rules:
+    - name: Transition new change requests to implementation
+      condition: event.sys_class_name == "change_request" and (event.state in ["-5", -5, "new", "New"]) and ("Related to Incident" in event.short_description) and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes)
+      action:
+        run_job_template:
+          name: "SNOW: Implement - Default"
+          organization: SNOW
+          post_events: true
+          job_args:
+            extra_vars:
+              change_request_sys_id: "{{ event.sys_id }}"
+              change_request_number: "{{ event.number }}"
+              change_request_state: "{{ event.state }}"
+              short_description: "{{ event.short_description | default('') }}"
+              description: "{{ event.description | default('') }}"
+              start_date: "{{ event.start_date | default('') }}"
+              planned_end_date: "{{ event.planned_end_date | default(event.end_date | default('')) }}"
+              assignment_group: "{{ event.assignment_group | default('') }}"
+              assigned_to: "{{ event.assigned_to | default('') }}"
+              priority: "{{ event.priority | default('') }}"
+              urgency: "{{ event.urgency | default('') }}"
+              impact: "{{ event.impact | default('') }}"
+              change_type: "{{ event.type | default('') }}"
+              risk_level: "{{ event.risk | default('') }}"
     - name: Enrich new incident received. 
       condition: event.sys_class_name == "incident" and event.sys_mod_count == "0"
       action:
