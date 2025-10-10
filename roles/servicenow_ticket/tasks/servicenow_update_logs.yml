@@ -1,9 +1,15 @@
 ---
-- name: Get Firewalld Status  # noqa no-changed-when
-  ansible.builtin.shell: systemctl status firewalld > /tmp/service.txt
-  register: result
+- name: Check firewalld status (non-failing)
+  ansible.builtin.command: systemctl is-active firewalld
+  register: firewalld_status
   changed_when: false
-  failed_when: result.rc not in [0, 3]
+  failed_when: firewalld_status.rc not in [0, 3]
+  become: true
+
+- name: Write firewalld status to file
+  ansible.builtin.copy:
+    dest: /tmp/service.txt
+    content: "{{ (firewalld_status.stdout | default('')).strip() if firewalld_status.rc == 0 else 'inactive' }}"
   become: true
   
 - name: Update an incident in ServiceNow
