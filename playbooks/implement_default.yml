@@ -75,6 +75,14 @@
           Firewalld service status: {{ firewalld_status }}
           EDA-IMPLEMENT-PROCESSED
 
+    - name: Transition change request to review with notes
+      servicenow.itsm.change_request:
+        sys_id: "{{ change_request_sys_id }}"
+        state: review
+        other:
+          work_notes: "{{ closing_notes }}"
+      register: cr_review_result
+
     - name: Close change request with notes
       servicenow.itsm.change_request:
         sys_id: "{{ change_request_sys_id }}"
