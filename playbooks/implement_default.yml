@@ -1,6 +1,6 @@
 ---
 - name: Default Implement-Phase Change Request Processor
-  hosts: localhost
+  hosts: all
   gather_facts: false
   module_defaults:
     ansible.builtin.dnf:
