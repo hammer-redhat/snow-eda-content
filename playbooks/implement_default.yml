@@ -20,11 +20,7 @@
     planned_end_date: "{{ ansible_eda.event.planned_end_date | default('') }}"
     change_type: "{{ ansible_eda.event.change_type | default(ansible_eda.event.type | default('')) }}"
     risk_level: "{{ ansible_eda.event.risk_level | default(ansible_eda.event.risk | default('')) }}"
-
-    # Path to the custom firewalld XML on the controller running this playbook
-    # You can override these via extra vars or inventory if needed
     firewalld_custom_xml_src: "../files/firewalld/custom.xml"
-    # Destination path for the custom firewalld XML on the managed host
     firewalld_custom_xml_dest: "/etc/firewalld/zones/czone.xml"
 
   tasks:
