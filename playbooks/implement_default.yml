@@ -1,10 +1,7 @@
 ---
 - name: Default Implement-Phase Change Request Processor
-  hosts: all
+  hosts: localhost
   gather_facts: false
-  module_defaults:
-    ansible.builtin.dnf:
-      use_backend: dnf4
   vars:
     change_request_number: "{{ ansible_eda.event.change_request_number | default(ansible_eda.event.number) }}"
     change_request_sys_id: "{{ ansible_eda.event.change_request_sys_id | default(ansible_eda.event.sys_id) }}"
@@ -20,8 +17,6 @@
     planned_end_date: "{{ ansible_eda.event.planned_end_date | default('') }}"
     change_type: "{{ ansible_eda.event.change_type | default(ansible_eda.event.type | default('')) }}"
     risk_level: "{{ ansible_eda.event.risk_level | default(ansible_eda.event.risk | default('')) }}"
-    firewalld_custom_xml_src: "../files/firewalld/custom.xml"
-    firewalld_custom_xml_dest: "/etc/firewalld/zones/czone.xml"
 
   tasks:
     - name: Log change request context
@@ -66,69 +61,6 @@
       ansible.builtin.set_fact:
         incident_sys_id: "{{ (incident_lookup.records[0].sys_id | default('')) if (incident_lookup is defined and (incident_lookup.records | default([])) | length > 0) else incident_sys_id }}"
       when: incident_lookup is defined
-
-    - name: Remove firewalld (to force reinstall)
-      ansible.builtin.dnf:
-        name: firewalld
-        state: absent
-      become: true
-
-    - name: Install firewalld
-      ansible.builtin.dnf:
-        name: firewalld
-        state: present
-      become: true
-
-    - name: Ensure firewalld configuration directory exists
-      ansible.builtin.file:
-        path: "{{ firewalld_custom_xml_dest | dirname }}"
-        state: directory
-        owner: root
-        group: root
-        mode: '0755'
-      become: true
-
-    - name: Deploy custom firewalld XML configuration
-      ansible.builtin.copy:
-        src: "{{ firewalld_custom_xml_src }}"
-        dest: "{{ firewalld_custom_xml_dest }}"
-        owner: root
-        group: root
-        mode: '0644'
-        backup: true
-      become: true
-
-    - name: Ensure firewalld is enabled and started
-      ansible.builtin.systemd:
-        name: firewalld
-        state: started
-        enabled: true
-        daemon_reload: true
-      become: true
-
-    - name: Reload firewalld to apply configuration
-      ansible.builtin.command: firewall-cmd --reload
-      changed_when: false
-      failed_when: false
-      become: true
-
-    - name: Check firewalld status via firewall-cmd
-      ansible.builtin.command: firewall-cmd --state
-      register: firewalld_cmd
-      changed_when: false
-      failed_when: false
-
-    - name: Fallback check firewalld status via systemctl
-      ansible.builtin.command: systemctl is-active firewalld
-      register: firewalld_systemctl
-      changed_when: false
-      failed_when: false
-      when: firewalld_cmd.rc != 0
-
-    - name: Set firewalld status fact
-      ansible.builtin.set_fact:
-        firewalld_status: >-
-          {{ (firewalld_cmd.stdout | default('') | trim) if firewalld_cmd.rc == 0 else (firewalld_systemctl.stdout | default('unknown') | trim) }}
 
     - name: Build closing notes
       ansible.builtin.set_fact:

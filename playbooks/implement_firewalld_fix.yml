@@ -1,0 +1,40 @@
+---
+- name: Implement Firewalld Fix
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Remove firewalld
+      ansible.builtin.dnf:
+        name: firewalld
+        state: absent
+
+    - name: Install firewalld
+      ansible.builtin.dnf:
+        name: firewalld
+        state: present
+
+    - name: Ensure firewalld is enabled and started
+      ansible.builtin.systemd:
+        name: firewalld
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Check firewalld status via firewall-cmd
+      ansible.builtin.command: firewall-cmd --state
+      register: firewalld_cmd
+      changed_when: false
+      failed_when: false
+
+    - name: Fallback check firewalld status via systemctl
+      ansible.builtin.command: systemctl is-active firewalld
+      register: firewalld_systemctl
+      changed_when: false
+      failed_when: false
+      when: firewalld_cmd.rc != 0
+
+    - name: Set firewalld status fact
+      ansible.builtin.set_fact:
+        firewalld_status: >-
+          {{ (firewalld_cmd.stdout | default('') | trim) if firewalld_cmd.rc == 0 else (firewalld_systemctl.stdout | default('unknown') | trim) }}
