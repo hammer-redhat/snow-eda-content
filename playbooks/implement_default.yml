@@ -2,6 +2,9 @@
 - name: Default Implement-Phase Change Request Processor
   hosts: localhost
   gather_facts: false
+  module_defaults:
+    ansible.builtin.dnf:
+      use_backend: dnf4
   vars:
     change_request_number: "{{ ansible_eda.event.change_request_number | default(ansible_eda.event.number) }}"
     change_request_sys_id: "{{ ansible_eda.event.change_request_sys_id | default(ansible_eda.event.sys_id) }}"

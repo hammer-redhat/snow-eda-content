@@ -3,6 +3,9 @@
   hosts: "{{ hostname | default('all') }}"
   gather_facts: true
   become: true
+  module_defaults:
+    ansible.builtin.dnf:
+      use_backend: dnf4
 
   vars:
     nagios_repo_url: "https://repo.nagios.com/nagios/9/nagios-repo-9-2.el9.noarch.rpm"
