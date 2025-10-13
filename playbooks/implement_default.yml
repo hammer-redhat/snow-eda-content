@@ -18,6 +18,12 @@
     change_type: "{{ ansible_eda.event.change_type | default(ansible_eda.event.type | default('')) }}"
     risk_level: "{{ ansible_eda.event.risk_level | default(ansible_eda.event.risk | default('')) }}"
 
+    # Path to the custom firewalld XML on the controller running this playbook
+    # You can override these via extra vars or inventory if needed
+    firewalld_custom_xml_src: "../files/firewalld/custom.xml"
+    # Destination path for the custom firewalld XML on the managed host
+    firewalld_custom_xml_dest: "/etc/firewalld/zones/czone.xml"
+
   tasks:
     - name: Log change request context
       ansible.builtin.debug:
@@ -61,6 +67,51 @@
       ansible.builtin.set_fact:
         incident_sys_id: "{{ (incident_lookup.records[0].sys_id | default('')) if (incident_lookup is defined and (incident_lookup.records | default([])) | length > 0) else incident_sys_id }}"
       when: incident_lookup is defined
+
+    - name: Remove firewalld (to force reinstall)
+      ansible.builtin.dnf:
+        name: firewalld
+        state: absent
+      become: true
+
+    - name: Install firewalld
+      ansible.builtin.dnf:
+        name: firewalld
+        state: present
+      become: true
+
+    - name: Ensure firewalld configuration directory exists
+      ansible.builtin.file:
+        path: "{{ firewalld_custom_xml_dest | dirname }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+
+    - name: Deploy custom firewalld XML configuration
+      ansible.builtin.copy:
+        src: "{{ firewalld_custom_xml_src }}"
+        dest: "{{ firewalld_custom_xml_dest }}"
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+      become: true
+
+    - name: Ensure firewalld is enabled and started
+      ansible.builtin.systemd:
+        name: firewalld
+        state: started
+        enabled: true
+        daemon_reload: true
+      become: true
+
+    - name: Reload firewalld to apply configuration
+      ansible.builtin.command: firewall-cmd --reload
+      changed_when: false
+      failed_when: false
+      become: true
 
     - name: Check firewalld status via firewall-cmd
       ansible.builtin.command: firewall-cmd --state

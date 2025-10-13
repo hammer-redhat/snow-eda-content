@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<zone target="REJECT">
+  <short>Custom Zone</short>
+  <description>This is a custom zone for specific services.</description>
+  <service name="ssh"/>
+  <port protocol="tcp" port="8080"/>
+  <source address="192.168.1.0/24"/>
+</zone>
