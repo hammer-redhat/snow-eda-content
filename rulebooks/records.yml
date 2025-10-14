@@ -1,5 +1,5 @@
 ---
-- name: Generic new poll for new records in ServiceNow and process the incidents. 
+- name: Generic new poll for new records in ServiceNow and process the incidents.
   hosts: all
   sources:
     - name: Watch for any updated incidents
@@ -52,7 +52,8 @@
 
   rules:
     - name: Transition new change requests to implementation
-      condition: event.sys_class_name == "change_request" and (event.state in ["-5", -5, "new", "New"]) and ("Related to Incident" in event.short_description) and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes)
+      condition: event.sys_class_name == "change_request" and (event.state in ["-5", -5, "new", "New"]) and ("Related to Incident" in event.short_description)
+        and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes)
       action:
         run_job_template:
           name: "SNOW: Implement - Default"
@@ -75,7 +76,7 @@
               change_type: "{{ event.type | default('') }}"
               risk_level: "{{ event.risk | default('') }}"
 
-    - name: Enrich new incident received. 
+    - name: Enrich new incident received.
       condition: event.sys_class_name == "incident" and event.sys_mod_count == "0"
       action:
         run_job_template:
@@ -88,7 +89,8 @@
               req_number: "{{ event.number }}"
 
     - name: Create a change request if needed.
-      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "0" and (event.category == "Software" or event.category == "software") and event.short_description == "test patch deployment"
+      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "0" and (event.category == "Software" or event.category == "software") and
+        event.short_description == "test patch deployment"
       action:
         run_job_template:
           name: "SNOW: Create Software Change Request"
@@ -100,7 +102,9 @@
               req_number: "{{ event.number }}"
 
     - name: Dispatch patch-related change requests in implementation
-      condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and ("patch" in event.short_description or "Patch" in event.short_description or "PATCH" in event.short_description or event.short_description == "test patch deployment")
+      condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and
+        ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and ("patch" in event.short_description or "Patch" in event.short_description or
+        "PATCH" in event.short_description or event.short_description == "test patch deployment")
       action:
         run_job_template:
           name: "SNOW: Implement - Patch Deployment"
@@ -124,7 +128,8 @@
               risk_level: "{{ event.risk }}"
 
     - name: Dispatch default handler for change requests in implementation
-      condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes)
+      condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and
+        ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes)
       action:
         run_workflow_template:
           name: "SNOW: Implement - Default"
