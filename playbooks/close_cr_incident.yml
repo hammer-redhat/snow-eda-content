@@ -10,7 +10,6 @@
           Short Description: {{ short_description }}
           Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
           Assignment: {{ assignment_group }} / {{ assigned_to }}
-          Firewalld service status: {{ firewalld_status }}
           EDA-CLOSURE-PROCESSED
 
     - name: Transition change request to review with notes
