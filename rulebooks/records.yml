@@ -126,7 +126,7 @@
     - name: Dispatch default handler for change requests in implementation
       condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes)
       action:
-        run_job_template:
+        run_workflow_template:
           name: "SNOW: Implement - Default"
           organization: SNOW
           post_events: true
