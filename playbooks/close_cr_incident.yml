@@ -49,7 +49,7 @@
         close_notes: "{{ closing_notes }}"
         other:
           comments: "{{ closing_notes }}"
-      when: (incident_sys_id | length == 0) and (incident_number | length > 0)
+      when: (ansible_eda.event.sys_id | length == 0) and (incident_number | length > 0)
       register: incident_close_result_by_number
 
     - name: Show update result
