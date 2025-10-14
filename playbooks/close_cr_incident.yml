@@ -1,8 +1,8 @@
 ---
-- name: Close out the CR and Incident 
+- name: Close out the CR and Incident
   hosts: localhost
   gather_facts: false
-  tasks:    
+  tasks:
     - name: Build closing notes
       ansible.builtin.set_fact:
         closing_notes: |
@@ -32,8 +32,14 @@
 
     - name: Extract related incident identifiers from change request text
       ansible.builtin.set_fact:
-        incident_sys_id: "{{ incident_sys_id | default(description | default('') | regex_search('Incident Sys ID:\\s*([0-9a-f]{32})', '\\1')) }}"
-        incident_number: "{{ incident_number | default(short_description | default('') | regex_search('INC[0-9]+')) | default(description | default('') | regex_search('INC[0-9]+')) }}"
+        incident_sys_id: >-
+          {{ (description | default('')
+            | regex_findall('Incident Sys ID:\\s*([0-9a-f]{32})'))
+            | first | default('') | trim }}
+        incident_number: >-
+          {{ (((short_description | default('')) ~ '\\n' ~ (description | default('')))
+            | regex_findall('INC[0-9]+'))
+            | first | default('') | trim }}
 
     - name: Update related incident with closing notes (by sys_id if available)
       servicenow.itsm.incident:
@@ -63,4 +69,3 @@
           Change Request {{ change_request_sys_id }} closed.
           Incident identifiers found - sys_id: {{ incident_sys_id | default('') }}, number: {{ incident_number | default('') }}
           Incident updated: {{ (incident_close_result_by_id is defined) or (incident_close_result_by_number is defined) }}
-
