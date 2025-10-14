@@ -32,13 +32,13 @@
 
     - name: Update related incident with closing notes (by sys_id if available)
       servicenow.itsm.incident:
-        sys_id: "{{ incident_sys_id }}"
+        sys_id: "{{ ansible_eda.event.sys_id }}"
         state: closed
         close_code: successful
         close_notes: "{{ closing_notes }}"
         other:
           comments: "{{ closing_notes }}"
-      when: incident_sys_id | length > 0
+      when: ansible_eda.event.sys_id | length > 0
       register: incident_close_result_by_id
 
     - name: Update related incident with closing notes (by number if sys_id missing)
