@@ -102,8 +102,8 @@
               req_number: "{{ event.number }}"
 
     - name: Dispatch patch-related change requests in implementation
-      condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and
-        ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and ("patch" in event.short_description or event.short_description == "test patch deployment")
+      condition: event.sys_class_name == "incident" and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and
+        ("patch" in event.short_description or event.short_description == "test patch deployment")
       action:
         run_job_template:
           name: "SNOW: Implement - Patch Deployment"
@@ -131,7 +131,7 @@
         ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes)
       action:
         run_workflow_template:
-          name: "SNOW: Implement - Default"
+          name: "SNOW: Implement - CR"
           organization: SNOW
           post_events: true
           job_args:
