@@ -30,15 +30,20 @@
           work_notes: "{{ closing_notes }}"
       register: cr_close_result
 
+    - name: Extract related incident identifiers from change request text
+      ansible.builtin.set_fact:
+        incident_sys_id: "{{ incident_sys_id | default(description | default('') | regex_search('Incident Sys ID:\\s*([0-9a-f]{32})', '\\1')) }}"
+        incident_number: "{{ incident_number | default(short_description | default('') | regex_search('INC[0-9]+')) | default(description | default('') | regex_search('INC[0-9]+')) }}"
+
     - name: Update related incident with closing notes (by sys_id if available)
       servicenow.itsm.incident:
-        sys_id: "{{ ansible_eda.event.sys_id }}"
+        sys_id: "{{ incident_sys_id }}"
         state: closed
         close_code: successful
         close_notes: "{{ closing_notes }}"
         other:
           comments: "{{ closing_notes }}"
-      when: ansible_eda.event.sys_id | length > 0
+      when: (incident_sys_id | default('')) | length > 0
       register: incident_close_result_by_id
 
     - name: Update related incident with closing notes (by number if sys_id missing)
@@ -49,12 +54,13 @@
         close_notes: "{{ closing_notes }}"
         other:
           comments: "{{ closing_notes }}"
-      when: (ansible_eda.event.sys_id | length == 0) and (incident_number | length > 0)
+      when: ((incident_sys_id | default('')) | length == 0) and ((incident_number | default('')) | length > 0)
       register: incident_close_result_by_number
 
     - name: Show update result
       ansible.builtin.debug:
         msg: |
           Change Request {{ change_request_sys_id }} closed.
+          Incident identifiers found - sys_id: {{ incident_sys_id | default('') }}, number: {{ incident_number | default('') }}
           Incident updated: {{ (incident_close_result_by_id is defined) or (incident_close_result_by_number is defined) }}
 
