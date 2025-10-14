@@ -80,7 +80,7 @@
       condition: event.sys_class_name == "incident" and event.sys_mod_count == "0"
       action:
         run_job_template:
-          name: "EDA Enrich ServiceNow REQ"
+          name: "SNOW: EDA Enrich ServiceNow REQ"
           organization: SNOW
           post_events: true
           job_args:
@@ -90,7 +90,7 @@
 
     - name: Create a change request if needed.
       condition: event.sys_class_name == "incident" and event.sys_mod_count >= "0" and (event.category == "Software" or event.category == "software") and
-        event.short_description == "test patch deployment"
+        event.short_description == "test service failure"
       action:
         run_job_template:
           name: "SNOW: Create Software Change Request"
@@ -103,8 +103,7 @@
 
     - name: Dispatch patch-related change requests in implementation
       condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and
-        ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and ("patch" in event.short_description or "Patch" in event.short_description or
-        "PATCH" in event.short_description or event.short_description == "test patch deployment")
+        ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and ("patch" in event.short_description or event.short_description == "test patch deployment")
       action:
         run_job_template:
           name: "SNOW: Implement - Patch Deployment"
