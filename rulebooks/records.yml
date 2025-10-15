@@ -112,9 +112,9 @@
           post_events: true
           job_args:
             extra_vars:
-              change_request_sys_id: "{{ event.sys_id }}"
-              change_request_number: "{{ event.number }}"
-              change_request_state: "{{ event.state }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              incident_number: "{{ event.number }}"
+              incident_state: "{{ event.state }}"
               short_description: "{{ event.short_description | default('') }}"
               description: "{{ event.description | default('') }}"
               start_date: "{{ event.start_date | default('') }}"
