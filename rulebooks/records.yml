@@ -101,7 +101,7 @@
               req_sys_id: "{{ event.sys_id }}"
               req_number: "{{ event.number }}"
 
-    - name: Dispatch patch-related incidents in progress. 
+    - name: Dispatch patch-related incidents in progress.
       condition: event.sys_class_name == "incident" and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and
         ("patch" in event.short_description or event.short_description == "test patch deployment")
       action:
@@ -118,13 +118,13 @@
               description: "{{ event.description | default('') }}"
               start_date: "{{ event.start_date | default('') }}"
               planned_end_date: "{{ event.planned_end_date | default(event.end_date | default('')) }}"
-              assignment_group: "{{ event.assignment_group }}"
-              assigned_to: "{{ event.assigned_to }}"
-              priority: "{{ event.priority }}"
-              urgency: "{{ event.urgency }}"
-              impact: "{{ event.impact }}"
-              change_type: "{{ event.type }}"
-              risk_level: "{{ event.risk }}"
+              assignment_group: "{{ event.assignment_group | default('') }}"
+              assigned_to: "{{ event.assigned_to | default('') }}"
+              priority: "{{ event.priority | default('') }}"
+              urgency: "{{ event.urgency | default('') }}"
+              impact: "{{ event.impact | default('') }}"
+              change_type: "{{ event.type | default('') }}"
+              risk_level: "{{ event.risk | default('') }}"
 
     - name: Dispatch default handler for change requests in implementation
       condition: event.sys_class_name == "change_request" and (event.state in ["implementation", "Implementation", "implement", "-1", -1]) and
@@ -143,10 +143,10 @@
               description: "{{ event.description | default('') }}"
               start_date: "{{ event.start_date | default('') }}"
               planned_end_date: "{{ event.planned_end_date | default(event.end_date | default('')) }}"
-              assignment_group: "{{ event.assignment_group }}"
-              assigned_to: "{{ event.assigned_to }}"
-              priority: "{{ event.priority }}"
-              urgency: "{{ event.urgency }}"
-              impact: "{{ event.impact }}"
-              change_type: "{{ event.type }}"
-              risk_level: "{{ event.risk }}"
+              assignment_group: "{{ event.assignment_group | default('') }}"
+              assigned_to: "{{ event.assigned_to | default('') }}"
+              priority: "{{ event.priority | default('') }}"
+              urgency: "{{ event.urgency | default('') }}"
+              impact: "{{ event.impact | default('') }}"
+              change_type: "{{ event.type | default('') }}"
+              risk_level: "{{ event.risk | default('') }}"
