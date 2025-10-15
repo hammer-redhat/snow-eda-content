@@ -7,4 +7,4 @@
     servicenow_ticket: updatelogs
 
   roles:
-    - servicenow_ticket
+    - ../roles/servicenow_ticket
