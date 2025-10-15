@@ -6,11 +6,18 @@
       servicenow.itsm.records:
         table: incident
         interval: 5
+        instance: "{{ SN_HOST }}"
+        username: "{{ SN_USERNAME }}"
+        password: "{{ SN_PASSWORD }}"
+
     - name: Monitor ServiceNow change requests in implementation
       servicenow.itsm.records:
         table: change_request
         interval: 10
         sysparm_query: "state=-1"
+        instance: "{{ SN_HOST }}"
+        username: "{{ SN_USERNAME }}"
+        password: "{{ SN_PASSWORD }}"
         fields:
           - sys_id
           - number
@@ -33,6 +40,9 @@
         table: change_request
         interval: 10
         sysparm_query: "state=-5^short_descriptionLIKERelated to Incident"
+        instance: "{{ SN_HOST }}"
+        username: "{{ SN_USERNAME }}"
+        password: "{{ SN_PASSWORD }}"
         fields:
           - sys_id
           - number
