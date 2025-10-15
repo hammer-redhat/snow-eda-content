@@ -1,11 +1,15 @@
 ---
-- name: Implement Patch Deployment from ServiceNow Change Request
+- name: Implement Patch Deployment from ServiceNow Change Request or Incident
   hosts: localhost
   gather_facts: false
   vars:
+    # Support both change request and incident sources
     change_request_number: "{{ ansible_eda.event.change_request_number | default(ansible_eda.event.number) }}"
-    change_request_sys_id: "{{ ansible_eda.event.change_request_sys_id | default(ansible_eda.event.sys_id) }}"
+    change_request_sys_id: "{{ ansible_eda.event.change_request_sys_id | default('') }}"
     change_request_state: "{{ ansible_eda.event.change_request_state | default(ansible_eda.event.state) }}"
+    incident_number: "{{ ansible_eda.event.incident_number | default(ansible_eda.event.number) }}"
+    incident_sys_id: "{{ ansible_eda.event.incident_sys_id | default(ansible_eda.event.sys_id) }}"
+    incident_state: "{{ ansible_eda.event.incident_state | default(ansible_eda.event.state) }}"
     short_description: "{{ ansible_eda.event.short_description }}"
     description: "{{ ansible_eda.event.description | default('') }}"
     priority: "{{ ansible_eda.event.priority | default('') }}"
@@ -17,14 +21,17 @@
     planned_end_date: "{{ ansible_eda.event.planned_end_date | default('') }}"
     change_type: "{{ ansible_eda.event.change_type | default(ansible_eda.event.type | default('')) }}"
     risk_level: "{{ ansible_eda.event.risk_level | default(ansible_eda.event.risk | default('')) }}"
+    has_change_request: "{{ (change_request_sys_id | length > 0) }}"
+    has_incident: "{{ (incident_sys_id | length > 0) }}"
 
   tasks:
     - name: Log patch deployment context
       ansible.builtin.debug:
         msg: |
-          Implement-phase change request received (patch deployment):
-          - Number: {{ change_request_number }}
-          - Sys ID: {{ change_request_sys_id }}
+          Implement-phase patch deployment triggered:
+          - Source: {{ 'Change Request' if has_change_request else 'Incident' }}
+          - CR Number/Sys ID: {{ change_request_number | default('N/A') }} / {{ change_request_sys_id | default('N/A') }}
+          - Incident Number/Sys ID: {{ incident_number | default('N/A') }} / {{ incident_sys_id | default('N/A') }}
           - Short Description: {{ short_description }}
           - Description: {{ description }}
           - Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
@@ -40,22 +47,50 @@
             Short Description: {{ short_description }}
             Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
             EDA-IMPLEMENT-PROCESSED
+      when: has_change_request | bool
       register: change_request_update
+
+    - name: Update incident with implementation progress
+      servicenow.itsm.incident:
+        sys_id: "{{ incident_sys_id }}"
+        state: in_progress
+        other:
+          comments: |
+            EDA is executing the patch deployment for this incident.
+            Short Description: {{ short_description }}
+            Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
+            EDA-IMPLEMENT-PROCESSED
+      when: has_incident | bool
+      register: incident_update
 
     - name: Trigger downstream automation (placeholder)
       ansible.builtin.debug:
         msg: "Run your patching role or include_role here based on your environment."
 
-    - name: Mark implementation progress in ServiceNow
+    - name: Mark implementation progress in ServiceNow (Change Request)
       servicenow.itsm.change_request:
         sys_id: "{{ change_request_sys_id }}"
         other:
           work_notes: |
             EDA completed patch deployment automation.
             EDA-IMPLEMENT-PROCESSED
+      when: has_change_request | bool
       register: change_request_update_complete
+
+    - name: Mark implementation progress in ServiceNow (Incident)
+      servicenow.itsm.incident:
+        sys_id: "{{ incident_sys_id }}"
+        other:
+          comments: |
+            EDA completed patch deployment automation.
+            EDA-IMPLEMENT-PROCESSED
+      when: has_incident | bool
+      register: incident_update_complete
 
     - name: Show final result
       ansible.builtin.debug:
-        var: change_request_update_complete.record
+        msg: |
+          Patch deployment completed.
+          Change Request updated: {{ change_request_update_complete is defined }}
+          Incident updated: {{ incident_update_complete is defined }}
 

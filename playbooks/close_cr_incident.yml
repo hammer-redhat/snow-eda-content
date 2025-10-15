@@ -3,13 +3,18 @@
   hosts: localhost
   gather_facts: false
   tasks:
+    - name: Determine if we're working with CR or Incident
+      ansible.builtin.set_fact:
+        has_change_request: "{{ (change_request_sys_id | default('')) | length > 0 }}"
+        has_incident: "{{ (incident_sys_id | default('')) | length > 0 }}"
+
     - name: Build closing notes
       ansible.builtin.set_fact:
         closing_notes: |
-          EDA implementation completed. Closing change request.
-          Short Description: {{ short_description }}
-          Priority/Urgency/Impact: {{ priority }}/{{ urgency }}/{{ impact }}
-          Assignment: {{ assignment_group }} / {{ assigned_to }}
+          EDA implementation completed.
+          Short Description: {{ short_description | default('') }}
+          Priority/Urgency/Impact: {{ priority | default('') }}/{{ urgency | default('') }}/{{ impact | default('') }}
+          Assignment: {{ assignment_group | default('') }} / {{ assigned_to | default('') }}
           EDA-CLOSURE-PROCESSED
 
     - name: Transition change request to review with notes
@@ -18,6 +23,7 @@
         state: review
         other:
           work_notes: "{{ closing_notes }}"
+      when: has_change_request | bool
       register: cr_review_result
 
     - name: Close change request with notes
@@ -28,44 +34,51 @@
         close_notes: "{{ closing_notes }}"
         other:
           work_notes: "{{ closing_notes }}"
+      when: has_change_request | bool
       register: cr_close_result
 
     - name: Extract related incident identifiers from change request text
       ansible.builtin.set_fact:
-        incident_sys_id: >-
+        extracted_incident_sys_id: >-
           {{ (description | default('')
             | regex_findall('Incident Sys ID:\\s*([0-9a-f]{32})'))
             | first | default('') | trim }}
-        incident_number: >-
+        extracted_incident_number: >-
           {{ (((short_description | default('')) ~ '\\n' ~ (description | default('')))
             | regex_findall('INC[0-9]+'))
             | first | default('') | trim }}
+      when: has_change_request | bool
 
-    - name: Update related incident with closing notes (by sys_id if available)
+    - name: Set final incident identifiers (prefer passed-in values, fall back to extracted)
+      ansible.builtin.set_fact:
+        final_incident_sys_id: "{{ incident_sys_id | default(extracted_incident_sys_id | default('')) }}"
+        final_incident_number: "{{ incident_number | default(extracted_incident_number | default('')) }}"
+
+    - name: Close related incident (by sys_id if available)
       servicenow.itsm.incident:
-        sys_id: "{{ incident_sys_id }}"
+        sys_id: "{{ final_incident_sys_id }}"
         state: closed
         close_code: successful
         close_notes: "{{ closing_notes }}"
         other:
           comments: "{{ closing_notes }}"
-      when: (incident_sys_id | default('')) | length > 0
+      when: (final_incident_sys_id | length > 0)
       register: incident_close_result_by_id
 
-    - name: Update related incident with closing notes (by number if sys_id missing)
+    - name: Close related incident (by number if sys_id missing)
       servicenow.itsm.incident:
-        number: "{{ incident_number }}"
+        number: "{{ final_incident_number }}"
         state: closed
         close_code: successful
         close_notes: "{{ closing_notes }}"
         other:
           comments: "{{ closing_notes }}"
-      when: ((incident_sys_id | default('')) | length == 0) and ((incident_number | default('')) | length > 0)
+      when: ((final_incident_sys_id | length == 0) and (final_incident_number | length > 0))
       register: incident_close_result_by_number
 
     - name: Show update result
       ansible.builtin.debug:
         msg: |
-          Change Request {{ change_request_sys_id }} closed.
-          Incident identifiers found - sys_id: {{ incident_sys_id | default('') }}, number: {{ incident_number | default('') }}
-          Incident updated: {{ (incident_close_result_by_id is defined) or (incident_close_result_by_number is defined) }}
+          Change Request: {{ change_request_sys_id | default('N/A') }} - {{ 'closed' if has_change_request else 'not provided' }}
+          Incident identifiers - sys_id: {{ final_incident_sys_id | default('') }}, number: {{ final_incident_number | default('') }}
+          Incident closed: {{ (incident_close_result_by_id is defined) or (incident_close_result_by_number is defined) }}
