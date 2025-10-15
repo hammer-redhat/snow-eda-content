@@ -88,6 +88,7 @@
             extra_vars:
               req_sys_id: "{{ event.sys_id }}"
               req_number: "{{ event.number }}"
+              short_description: "{{ event.short_description | default('') }}"
 
     - name: Create a change request if needed.
       condition: event.sys_class_name == "incident" and event.sys_mod_count >= "0" and (event.category == "Software" or event.category == "software") and

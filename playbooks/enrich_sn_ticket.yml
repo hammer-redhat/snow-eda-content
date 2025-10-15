@@ -3,6 +3,143 @@
   hosts: localhost
   gather_facts: false
   connection: local
+  vars:
+    req_sys_id: "{{ ansible_eda.event.req_sys_id | default(ansible_eda.event.sys_id) }}"
+    req_number: "{{ ansible_eda.event.req_number | default(ansible_eda.event.number) }}"
+    short_description: "{{ ansible_eda.event.short_description | default('') }}"
+
+  tasks:
+    - name: Fetch incident details if short_description not provided
+      servicenow.itsm.incident_info:
+        sys_id: "{{ req_sys_id }}"
+      register: incident_info
+      when: (short_description | length == 0)
+
+    - name: Set short_description from fetched incident
+      ansible.builtin.set_fact:
+        short_description: "{{ incident_info.records[0].short_description }}"
+      when:
+        - incident_info is defined
+        - incident_info.records | length > 0
+
+    - name: Display incident context
+      ansible.builtin.debug:
+        msg: |
+          Enriching incident:
+          - Number: {{ req_number }}
+          - Sys ID: {{ req_sys_id }}
+          - Short Description: {{ short_description }}
+
+    # Conditional enrichment based on short description
+    - name: Check firewalld status (for "test service failure")
+      when: '"test service failure" in short_description'
+      block:
+        - name: Gather firewalld status
+          ansible.builtin.command: firewall-cmd --state
+          register: firewalld_state
+          ignore_errors: true
+          changed_when: false
+          delegate_to: localhost
+
+        - name: Get firewalld active zones
+          ansible.builtin.command: firewall-cmd --get-active-zones
+          register: firewalld_zones
+          ignore_errors: true
+          changed_when: false
+          delegate_to: localhost
+
+        - name: Get default zone
+          ansible.builtin.command: firewall-cmd --get-default-zone
+          register: firewalld_default_zone
+          ignore_errors: true
+          changed_when: false
+          delegate_to: localhost
+
+        - name: List services in public zone
+          ansible.builtin.command: firewall-cmd --zone=public --list-services
+          register: firewalld_services
+          ignore_errors: true
+          changed_when: false
+          delegate_to: localhost
+
+        - name: Build firewalld enrichment notes
+          ansible.builtin.set_fact:
+            enrichment_notes: |
+              === EDA Enrichment: Firewalld Status ===
+
+              Firewalld State: {{ firewalld_state.stdout | default('Error: ' + firewalld_state.stderr | default('N/A')) }}
+
+              Active Zones:
+              {{ firewalld_zones.stdout | default('Error: ' + firewalld_zones.stderr | default('N/A')) }}
+
+              Default Zone: {{ firewalld_default_zone.stdout | default('Error: ' + firewalld_default_zone.stderr | default('N/A')) }}
+
+              Services (public zone):
+              {{ firewalld_services.stdout | default('Error: ' + firewalld_services.stderr | default('N/A')) }}
+
+              Enrichment completed at: {{ ansible_date_time.iso8601 }}
+              EDA-ENRICH-PROCESSED
+
+    - name: Check disk space (for "test patch deployment")
+      when: '"test patch deployment" in short_description'
+      block:
+        - name: Check disk space with df
+          ansible.builtin.command: df -h
+          register: disk_space
+          ignore_errors: true
+          changed_when: false
+          delegate_to: localhost
+
+        - name: Check disk usage by directory
+          ansible.builtin.command: du -sh /var /tmp /home 2>/dev/null
+          register: disk_usage
+          ignore_errors: true
+          changed_when: false
+          delegate_to: localhost
+
+        - name: Check inode usage
+          ansible.builtin.command: df -i
+          register: inode_usage
+          ignore_errors: true
+          changed_when: false
+          delegate_to: localhost
+
+        - name: Build disk space enrichment notes
+          ansible.builtin.set_fact:
+            enrichment_notes: |
+              === EDA Enrichment: Disk Space Analysis ===
+
+              Disk Space (df -h):
+              {{ disk_space.stdout | default('Error: ' + disk_space.stderr | default('N/A')) }}
+
+              Directory Usage:
+              {{ disk_usage.stdout | default('Error: ' + disk_usage.stderr | default('N/A')) }}
+
+              Inode Usage:
+              {{ inode_usage.stdout | default('Error: ' + inode_usage.stderr | default('N/A')) }}
+
+              Enrichment completed at: {{ ansible_date_time.iso8601 }}
+              EDA-ENRICH-PROCESSED
+
+    - name: Upload enrichment notes to incident
+      servicenow.itsm.incident:
+        sys_id: "{{ req_sys_id }}"
+        other:
+          comments: "{{ enrichment_notes }}"
+      when: enrichment_notes is defined
+      register: incident_update
+
+    - name: Display update result
+      ansible.builtin.debug:
+        msg: |
+          Incident enrichment completed.
+          Updated: {{ incident_update is defined and incident_update.changed }}
+          Enrichment type: {{ enrichment_type }}
+      vars:
+        enrichment_type: >-
+          {% if 'test service failure' in short_description %}Firewalld Status
+          {% elif 'test patch deployment' in short_description %}Disk Space Analysis
+          {% else %}None{% endif %}
 
   roles:
-    - ../roles/servicenow_ritm_retrieve_eda
+    - servicenow_ritm_retrieve_eda
