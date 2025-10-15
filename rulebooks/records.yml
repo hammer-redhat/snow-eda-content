@@ -4,17 +4,11 @@
   sources:
     - name: Watch for any updated incidents
       servicenow.itsm.records:
-        instance: "{{ lookup('env', 'SN_HOST') }}"
-        username: "{{ lookup('env', 'SN_USERNAME') }}"
-        password: "{{ lookup('env', 'SN_PASSWORD') }}"
         table: incident
         interval: 5
 
     - name: Monitor ServiceNow change requests in implementation
       servicenow.itsm.records:
-        instance: "{{ lookup('env', 'SN_HOST') }}"
-        username: "{{ lookup('env', 'SN_USERNAME') }}"
-        password: "{{ lookup('env', 'SN_PASSWORD') }}"
         table: change_request
         interval: 10
         sysparm_query: "state=-1"
@@ -37,9 +31,6 @@
 
     - name: Monitor new change requests to transition to implementation
       servicenow.itsm.records:
-        instance: "{{ lookup('env', 'SN_HOST') }}"
-        username: "{{ lookup('env', 'SN_USERNAME') }}"
-        password: "{{ lookup('env', 'SN_PASSWORD') }}"
         table: change_request
         interval: 10
         sysparm_query: "state=-5^short_descriptionLIKERelated to Incident"
