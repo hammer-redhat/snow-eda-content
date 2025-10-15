@@ -91,7 +91,7 @@
               short_description: "{{ event.short_description | default('') }}"
 
     - name: Create a change request if needed.
-      condition: event.sys_class_name == "incident" and event.sys_mod_count >= "0" and (event.category == "Software" or event.category == "software") and
+      condition: event.sys_class_name == "incident" and event.state not in ["6", "7"] and event.sys_mod_count >= "0" and (event.category == "Software" or event.category == "software") and
         event.short_description == "test service failure"
       action:
         run_job_template:
@@ -104,7 +104,7 @@
               req_number: "{{ event.number }}"
 
     - name: Dispatch patch-related incidents in progress.
-      condition: event.sys_class_name == "incident" and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and
+      condition: event.sys_class_name == "incident" and event.state not in ["6", "7"] and ("EDA-IMPLEMENT-PROCESSED" not in event.comments_and_work_notes) and
         ("patch" in event.short_description or event.short_description == "test patch deployment")
       action:
         run_workflow_template:
