@@ -1,18 +1,113 @@
 ---
-- name: Check firewalld status (non-failing)
-  ansible.builtin.command: systemctl status firewalld
-  register: firewalld_status
-  changed_when: false
-  failed_when: firewalld_status.rc not in [0, 3]
-  become: true
+- name: Set short_description variable
+  ansible.builtin.set_fact:
+    short_description: "{{ ansible_eda.event.short_description | default('') }}"
 
-- name: Write firewalld status to file
-  ansible.builtin.copy:
-    dest: /tmp/service.txt
-    content: "{{ (firewalld_status.stdout | default('')).strip() if firewalld_status.rc == 0 else 'inactive' }}"
-  become: true
-  
-- name: Update an incident in ServiceNow
+# Conditional enrichment for "test service failure"
+- name: Firewalld enrichment block (test service failure)
+  when: '"test service failure" in short_description'
+  block:
+    - name: Check firewalld status
+      ansible.builtin.command: systemctl status firewalld
+      register: firewalld_status
+      changed_when: false
+      failed_when: firewalld_status.rc not in [0, 3]
+      become: true
+
+    - name: Get firewalld active zones
+      ansible.builtin.command: firewall-cmd --get-active-zones
+      register: firewalld_zones
+      ignore_errors: true
+      changed_when: false
+      become: true
+
+    - name: Get default zone
+      ansible.builtin.command: firewall-cmd --get-default-zone
+      register: firewalld_default_zone
+      ignore_errors: true
+      changed_when: false
+      become: true
+
+    - name: List services in public zone
+      ansible.builtin.command: firewall-cmd --zone=public --list-services
+      register: firewalld_services
+      ignore_errors: true
+      changed_when: false
+      become: true
+
+    - name: Write firewalld status to file
+      ansible.builtin.copy:
+        dest: /tmp/firewalld_enrichment.txt
+        content: |
+          === EDA Enrichment: Firewalld Status ===
+
+          Firewalld Status:
+          {{ firewalld_status.stdout | default('inactive') }}
+
+          Active Zones:
+          {{ firewalld_zones.stdout | default('N/A') }}
+
+          Default Zone: {{ firewalld_default_zone.stdout | default('N/A') }}
+
+          Services (public zone):
+          {{ firewalld_services.stdout | default('N/A') }}
+
+          Enrichment completed at: {{ ansible_date_time.iso8601 }}
+        mode: '0644'
+      become: true
+
+    - name: Set attachment path for firewalld
+      ansible.builtin.set_fact:
+        enrichment_file: /tmp/firewalld_enrichment.txt
+        enrichment_name: "Firewalld Status Report"
+
+# Conditional enrichment for "test patch deployment"
+- name: Disk space enrichment block (test patch deployment)
+  when: '"test patch deployment" in short_description'
+  block:
+    - name: Check disk space with df
+      ansible.builtin.command: df -h
+      register: disk_space
+      changed_when: false
+      become: true
+
+    - name: Check disk usage by directory
+      ansible.builtin.shell: du -sh /var /tmp /home 2>/dev/null || echo "Unable to check some directories"
+      register: disk_usage
+      changed_when: false
+      become: true
+
+    - name: Check inode usage
+      ansible.builtin.command: df -i
+      register: inode_usage
+      changed_when: false
+      become: true
+
+    - name: Write disk space info to file
+      ansible.builtin.copy:
+        dest: /tmp/disk_space_enrichment.txt
+        content: |
+          === EDA Enrichment: Disk Space Analysis ===
+
+          Disk Space (df -h):
+          {{ disk_space.stdout }}
+
+          Directory Usage:
+          {{ disk_usage.stdout }}
+
+          Inode Usage:
+          {{ inode_usage.stdout }}
+
+          Enrichment completed at: {{ ansible_date_time.iso8601 }}
+        mode: '0644'
+      become: true
+
+    - name: Set attachment path for disk space
+      ansible.builtin.set_fact:
+        enrichment_file: /tmp/disk_space_enrichment.txt
+        enrichment_name: "Disk Space Analysis Report"
+
+- name: Update incident in ServiceNow with enrichment
   servicenow.itsm.incident:
     instance:
       host: "{{ lookup('env', 'SN_HOST') }}"
@@ -23,7 +118,24 @@
     urgency: "{{ ansible_eda.event.urgency }}"
     impact: "{{ ansible_eda.event.impact }}"
     other:
-      comments: "This is automated enrichment of ServiceNow tickets with EDA."
+      comments: "EDA automated enrichment completed for: {{ short_description }}"
     attachments:
-      - path: /tmp/service.txt
-        name: "Firewalld Status"
+      - path: "{{ enrichment_file }}"
+        name: "{{ enrichment_name }}"
+  when: enrichment_file is defined
+  delegate_to: localhost
+
+- name: Update incident without attachment (no matching criteria)
+  servicenow.itsm.incident:
+    instance:
+      host: "{{ lookup('env', 'SN_HOST') }}"
+      password: "{{ lookup('env', 'SN_PASSWORD') }}"
+      username: "{{ lookup('env', 'SN_USERNAME') }}"
+    state: in_progress
+    number: "{{ req_number }}"
+    urgency: "{{ ansible_eda.event.urgency }}"
+    impact: "{{ ansible_eda.event.impact }}"
+    other:
+      comments: "EDA enrichment: No specific enrichment criteria matched for this incident."
+  when: enrichment_file is not defined
+  delegate_to: localhost

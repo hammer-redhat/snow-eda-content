@@ -1,10 +1,10 @@
 ---
 - name: Update an incident in ServiceNow with Logs attached
   hosts: "{{ vm_name | default('all')}}"
-  gather_facts: false
+  gather_facts: true
 
   vars:
     servicenow_ticket: updatelogs
 
   roles:
-    - ../roles/servicenow_ticket
+    - servicenow_ticket
